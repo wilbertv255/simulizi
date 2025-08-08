@@ -1,0 +1,98 @@
+const { initializeApp } = require('firebase/app');
+const { getDatabase, ref, get, set, push } = require('firebase/database');
+
+// Mpangilio wa Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+    authDomain: "simulizi23.firebaseapp.com",
+    databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+    projectId: "simulizi23",
+    storageBucket: "simulizi23.firebasestorage.app",
+    messagingSenderId: "306995992624",
+    appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+    measurementId: "G-7RLGM76PSE"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const database = getDatabase(firebaseApp);
+
+// ZenoPay API Key na Webhook URL
+const ZENO_API_KEY = "Zcc6sV0hP4TGjfwaflRoeS0oZ4XAGifWt4KLJK-ud3N82XIT8FRnJr_pe2DFD9enP45NRsBVFwgc7GS80gHb_A";
+const WEBHOOK_URL = "https://dazzling-nasturtium-bf50ff.netlify.app/.netlify/functions/webhook";
+
+exports.handler = async function(event, context) {
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            body: JSON.stringify({ status: 'error', message: 'Method Not Allowed' })
+        };
+    }
+
+    const { userId, plan, amount, method, phoneNumber, userEmail, userName } = JSON.parse(event.body || '{}');
+
+    if (!userId || !plan || !amount || !method || !phoneNumber || !userEmail || !userName) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ status: 'error', message: 'Missing required fields' })
+        };
+    }
+
+    if (!/^07[0-9]{8}$/.test(phoneNumber)) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ status: 'error', message: 'Invalid phone number format' })
+        };
+    }
+
+    try {
+        // Tengeneza order_id
+        const orderId = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Tuma ombi la malipo kwa ZenoPay
+        const response = await fetch('https://zenoapi.com/api/payments/mobile_money_tanzania', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': ZENO_API_KEY
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                buyer_email: userEmail,
+                buyer_name: userName,
+                buyer_phone: phoneNumber,
+                amount: parseInt(amount),
+                webhook_url: WEBHOOK_URL
+            })
+        });
+
+        const result = await response.json();
+        if (result.status !== 'success') {
+            throw new Error(result.message || 'Failed to initiate payment');
+        }
+
+        // Hifadhi rekodi ya malipo kwenye Firebase
+        const paymentsRef = ref(database, 'paymentRecords');
+        const newPaymentRef = push(paymentsRef);
+        await set(newPaymentRef, {
+            userId: userId,
+            plan: plan,
+            amount: amount,
+            method: method,
+            phoneNumber: phoneNumber,
+            orderId: orderId,
+            timestamp: new Date().toISOString(),
+            status: 'pending'
+        });
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ status: 'success', message: 'Payment initiated', orderId: orderId })
+        };
+    } catch (error) {
+        console.error('Initiate Payment Error:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ status: 'error', message: `Failed to initiate payment: ${error.message}` })
+        };
+    }
+};

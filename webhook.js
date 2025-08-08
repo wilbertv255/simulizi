@@ -1,7 +1,6 @@
-const { initializeApp } = require('firebase/app');
-const { getDatabase, ref, update, get } = require('firebase/database');
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, update } from 'firebase/database';
 
-// Mpangilio wa Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
     authDomain: "simulizi23.firebaseapp.com",
@@ -13,86 +12,57 @@ const firebaseConfig = {
     measurementId: "G-7RLGM76PSE"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const database = getDatabase(firebaseApp);
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
-exports.handler = async function(event, context) {
-    // Thibitisha kuwa ni POST request
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            body: JSON.stringify({ status: 'error', message: 'Method Not Allowed' })
-        };
+export default async function handler(req, res) {
+    console.log('=== Webhook Invoked ===');
+    console.log('Request Method:', req.method);
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        console.log('Handling OPTIONS request');
+        return res.status(200).end();
     }
 
-    const apiKey = event.headers['x-api-key'];
-    if (apiKey !== 'YOUR_API_KEY') { // Weka API key yako hapa
-        return {
-            statusCode: 401,
-            body: JSON.stringify({ status: 'error', message: 'Invalid API Key' })
-        };
+    if (req.method !== 'POST') {
+        console.log('Method Not Allowed:', req.method);
+        return res.status(405).json({ status: 'error', message: 'Method Not Allowed' });
     }
 
-    const body = JSON.parse(event.body || '{}');
-    const { order_id, payment_status, reference } = body;
+    let body;
+    try {
+        console.log('Parsing Webhook Body');
+        body = req.body;
+        console.log('Parsed Webhook Body:', body);
+    } catch (error) {
+        console.error('Webhook JSON Parse Error:', error.message);
+        return res.status(400).json({ status: 'error', message: 'Invalid JSON body', error: error.message });
+    }
 
-    if (payment_status !== 'COMPLETED') {
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ status: 'success', message: 'Webhook received, but status is not COMPLETED' })
-        };
+    const { order_id, status, transaction_id } = body;
+
+    if (!order_id || !status) {
+        console.log('Missing Webhook Fields:', { order_id, status });
+        return res.status(400).json({ status: 'error', message: 'Missing required webhook fields' });
     }
 
     try {
-        // Pata rekodi ya malipo kwa order_id
-        const paymentsRef = ref(database, 'paymentRecords');
-        const snapshot = await get(paymentsRef);
-        if (!snapshot.exists()) {
-            return {
-                statusCode: 404,
-                body: JSON.stringify({ status: 'error', message: 'No payment records found' })
-            };
-        }
-
-        const payments = snapshot.val();
-        const paymentKey = Object.keys(payments).find(key => payments[key].orderId === order_id);
-        if (!paymentKey) {
-            return {
-                statusCode: 404,
-                body: JSON.stringify({ status: 'error', message: 'Payment record not found' })
-            };
-        }
-
-        const payment = payments[paymentKey];
-        const userId = payment.userId;
-        const plan = payment.plan;
-        const daysMap = { 'Bronze': 30, 'Silver': 60, 'Gold': 90 };
-        const premiumValue = { 'Bronze': 1, 'Silver': 2, 'Gold': 3 };
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + daysMap[plan]);
-
-        // Sasisha hali ya malipo
-        await update(ref(database, `paymentRecords/${paymentKey}`), {
-            status: 'completed',
-            reference: reference,
+        console.log('Updating Firebase for Order:', order_id);
+        const paymentRef = ref(database, `payments/${order_id}`);
+        await update(paymentRef, {
+            status,
+            transactionId: transaction_id || null,
             updatedAt: new Date().toISOString()
         });
 
-        // Sasusha hali ya mtumiaji
-        await update(ref(database, `users/${userId}`), {
-            premium: premiumValue[plan],
-            ended: endDate.toISOString().split('T')[0]
-        });
-
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ status: 'success', message: 'Webhook processed successfully' })
-        };
+        console.log(`Webhook Processed: Order ${order_id} updated to status ${status}`);
+        return res.status(200).json({ status: 'success', message: 'Webhook processed' });
     } catch (error) {
-        console.error('Webhook Error:', error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ status: 'error', message: 'Failed to process webhook' })
-        };
+        console.error('Webhook Processing Error:', error.message);
+        return res.status(500).json({ status: 'error', message: `Failed to process webhook: ${error.message}` });
     }
-};
+}
