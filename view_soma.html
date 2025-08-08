@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Soma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        /* Modal style */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            margin: 20px auto;
+            color: black;
+            position: relative;
+        }
+        /* Modal close button style */
+        .modal-close {
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <div class="p-4">
+        <h1 id="contentTitle" class="text-2xl font-bold"></h1>
+        <div id="mainPost" class="mt-4">
+            <!-- Post kuu itawekwa hapa -->
+        </div>
+        <div id="relatedPosts" class="mt-4 grid grid-cols-2 gap-4">
+            <!-- Post nyingine zitawekwa hapa -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Tafadhali Lipia</h2>
+            <p class="mb-4">Ili kupata simulizi hii, unahitaji kuwa na kifurushi cha premium.</p>
+            <a id="paymentLink" href="#" class="bg-blue-600 text-white py-2 px-4 rounded-lg inline-block">
+                Lipia Sasa
+            </a>
+            
+        </div>
+    </div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+    import { getDatabase, ref, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+        authDomain: "simulizi23.firebaseapp.com",
+        databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+        projectId: "simulizi23",
+        storageBucket: "simulizi23.firebasestorage.app",
+        messagingSenderId: "306995992624",
+        appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+        measurementId: "G-7RLGM76PSE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+    const postId = urlParams.get('id');
+    const title = decodeURIComponent(urlParams.get('title')).replace(/%20/g, ' ').trim();
+
+    // Ongeza event listener kwa kila post
+    function addPostClickHandler(element, post) {
+        element.addEventListener('click', async (event) => {
+            event.preventDefault(); // Zuia ufunguzi wa kawaida
+
+            if (!userId) {
+                showModal("Unahitaji kuingia kwanza", "index.html");
+                return;
+            }
+
+            const userSnapshot = await get(ref(database, `users/${userId}`));
+            if (!userSnapshot.exists()) {
+                showModal("Mtumiaji hajapatikana", "index.html");
+                return;
+            }
+
+            const userData = userSnapshot.val();
+            const premiumStatus = userData.premium || 0;
+
+            const postSnapshot = await get(ref(database, `words/${post.id}`));
+            if (!postSnapshot.exists()) {
+                alert("Post haipatikani");
+                return;
+            }
+
+            const postData = postSnapshot.val();
+            const postStatus = postData.status || 0;
+
+            if (premiumStatus === 0 && postStatus === 0) {
+                showModal(
+                    "Huduma ya Premium Inahitajika",
+                    `payment.html?userId=${userId}`
+                );
+            } else {
+                window.location.href = element.href;
+            }
+        });
+    }
+
+    // Kazi za kuonyesha na kufunga modal
+    function showModal(message, paymentUrl) {
+        const modal = document.getElementById('modalOverlay');
+        const paymentLink = document.getElementById('paymentLink');
+        
+        document.querySelector('.modal-content p').textContent = message;
+        paymentLink.href = paymentUrl;
+        modal.style.display = 'block';
+    }
+
+    function closeModal() {
+        console.log("Funga modal imeitwa"); // Ujumbe wa debugging
+        const modal = document.getElementById('modalOverlay');
+        modal.style.display = 'none';
+    }
+
+    // Ongeza tukio la kubonyeza sehemu ya nje ya modal
+    function setupModalClose() {
+        const modal = document.getElementById('modalOverlay');
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    // Kazi za kuonyesha maudhui
+    function displayMainPost(post) {
+        const mainPostDiv = document.getElementById('mainPost');
+        if (!post) {
+            mainPostDiv.innerHTML = `<p class="text-gray-400">Post haipatikani.</p>`;
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = `view1.html?id=${post.id}&title=${encodeURIComponent(post.title)}&episode=${post.episode}`;
+        
+        link.innerHTML = `
+            <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                <img src="${post.image_url || 'https://via.placeholder.com/150'}" 
+                     alt="${post.title}" 
+                     class="w-full h-48 object-cover rounded-lg"/>
+                <h2 class="text-xl font-semibold mt-2">${post.title}</h2>
+                <p class="text-gray-400">Episode: ${post.episode || 'N/A'}</p>
+            </div>
+        `;
+
+        addPostClickHandler(link, post);
+        mainPostDiv.appendChild(link);
+    }
+
+    function displayRelatedPosts(posts) {
+        const relatedPostsDiv = document.getElementById('relatedPosts');
+        relatedPostsDiv.innerHTML = '';
+
+        posts.forEach(post => {
+            const link = document.createElement('a');
+            link.href = `view1.html?id=${post.id}&title=${encodeURIComponent(post.title)}&episode=${post.episode}`;
+            link.classList.add('bg-gray-700', 'p-3', 'rounded-lg', 'card', 'hover:bg-gray-600', 'max-w-xs', 'mx-auto');
+            
+            link.innerHTML = `
+                <img src="${post.image_url || 'https://via.placeholder.com/150'}" 
+                     alt="${post.title}" 
+                     class="w-full h-32 object-cover rounded-lg"/>
+                <h2 class="text-lg font-semibold mt-2">${post.title}</h2>
+                <p class="text-gray-400">Episode: ${post.episode || 'N/A'}</p>
+            `;
+
+            addPostClickHandler(link, post);
+            relatedPostsDiv.appendChild(link);
+        });
+    }
+
+    // Pakia data na weka tukio la kufunga modal
+    document.addEventListener("DOMContentLoaded", async () => {
+        // Pata post kuu
+        const mainPost = await get(ref(database, `words/${postId}`))
+            .then(snapshot => snapshot.exists() ? { id: postId, ...snapshot.val() } : null);
+
+        // Pata post zingine
+        const allPosts = await get(query(ref(database, 'words'), orderByChild('title')))
+            .then(snapshot => snapshot.exists() ? Object.entries(snapshot.val()).map(([id, data]) => ({ id, ...data })) : []);
+
+        const relatedPosts = allPosts.filter(post => 
+            post.title.toLowerCase().includes(title.toLowerCase()) && 
+            post.id !== postId
+        );
+
+        displayMainPost(mainPost);
+        displayRelatedPosts(relatedPosts);
+
+        // Weka tukio la kufunga modal
+        setupModalClose();
+    });
+</script>
+</body>
+</html>

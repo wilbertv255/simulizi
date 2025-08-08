@@ -1,0 +1,10 @@
+{
+  "name": "simulizi-webhook",
+  "version": "1.0.0",
+  "dependencies": {
+    "firebase": "^11.3.1"
+  },
+  "engines": {
+    "node": "18"
+  }
+}

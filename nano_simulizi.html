@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image to Supabase</title>
+    <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+        // 🚀 Badilisha hizi na zako
+        const supabaseUrl = "https://ujizsaionvuaimosubii.supabase.co"; // Weka URL yako
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqaXpzYWlvbnZ1YWltb3N1YmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA0ODQ2NjEsImV4cCI6MjA1NjA2MDY2MX0.EYknxThD4-dakvqY91N_HEPWyzQ0izeOeSB9nh6hTUA"; // Weka Anon Key yako
+        const bucketName = "Simulizi_app"; // Hakikisha jina halina space
+        
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        window.uploadImage = async function () {
+            const fileInput = document.getElementById("uploadFile");
+            const previewImg = document.getElementById("uploadedImage");
+
+            if (fileInput.files.length === 0) {
+                alert("Chagua picha kwanza!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // ✅ Validation: Hakikisha ni picha
+            if (!file.type.startsWith("image/")) {
+                alert("Tafadhali chagua faili la picha tu!");
+                return;
+            }
+
+            const filePath = `uploads/${Date.now()}-${file.name}`;
+
+            // 🚀 Upload file kwenye Supabase Storage
+            const { data, error } = await supabase.storage
+                .from(bucketName)
+                .upload(filePath, file);
+
+            if (error) {
+                console.error("Upload error:", error.message);
+                alert("Imeshindwa kupakia picha!");
+                return;
+            }
+
+            // 🚀 Pata Public URL ya picha
+            const { data: publicData } = supabase.storage
+                .from(bucketName)
+                .getPublicUrl(filePath);
+
+            if (!publicData) {
+                alert("Imeshindwa kupata URL ya picha!");
+                return;
+            }
+
+            // 🖼️ Onyesha picha kwenye ukurasa
+            previewImg.src = publicData.publicUrl;
+            previewImg.style.display = "block";
+
+            console.log("✅ Image URL:", publicData.publicUrl);
+        };
+    </script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        input { margin: 10px; }
+        img { margin-top: 20px; max-width: 300px; display: none; }
+    </style>
+</head>
+<body>
+
+    <h2>Upload Image to Supabase</h2>
+    <input type="file" id="uploadFile" accept="image/*">
+    <button onclick="uploadImage()">Upload</button>
+
+    <h3>Uploaded Image:</h3>
+    <img id="uploadedImage" alt="Uploaded Image">
+
+</body>
+</html>

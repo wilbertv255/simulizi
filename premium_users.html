@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Users - Simulizi</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 pb-16">
+        <!-- Kichwa na kitufe cha kurudi -->
+        <div class="flex items-center mb-4">
+            <a href="admin_leo.html" class="mr-2 text-blue-500 hover:text-blue-700">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-bold">Watumiaji wa Premium</h1>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="text-center py-8">
+            <i class="fas fa-spinner fa-spin fa-2x text-gray-500"></i>
+        </div>
+
+        <!-- Orodha ya Premium Users -->
+        <div id="premiumUsersList" class="bg-white rounded-lg shadow overflow-hidden">
+            <!-- Watumiaji wa Premium wataonekana hapa -->
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        // Mpangilio wa Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        // Anza Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // ======================
+        // 1. KAZI YA KUPAKIA WATUMIAJI WA PREMIUM
+        // ======================
+        async function loadPremiumUsers() {
+            try {
+                const usersRef = ref(database, 'users');
+                const snapshot = await get(usersRef);
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (!snapshot.exists()) {
+                    document.getElementById('premiumUsersList').innerHTML = `
+                        <p class="p-4 text-center text-gray-500">
+                            <i class="fas fa-users-slash mr-2"></i>Hakuna watumiaji wa Premium
+                        </p>`;
+                    return;
+                }
+
+                const users = Object.entries(snapshot.val());
+                const updates = {}; // Hifadhi mabadiliko yote
+
+                // Chunga watumiaji waliomalizika muda wao
+                users.forEach(([userId, user]) => {
+                    if (user.premium >= 1 && user.premium <= 3) {
+                        const daysRemaining = calculateDaysRemaining(user.ended);
+                        if (daysRemaining <= 0) {
+                            // Tengeza mabadiliko
+                            updates[`users/${userId}/premium`] = 0;
+                            updates[`users/${userId}/ended`] = 0;
+                        }
+                    }
+                });
+
+                // Tekeleza mabadiliko yote ikiwa yapo
+                if (Object.keys(updates).length > 0) {
+                    await update(ref(database), updates);
+                }
+
+                // Onyesha watumiaji wa Premium
+                let premiumUsersHTML = '';
+
+                users.forEach(([userId, user]) => {
+                    if (user.premium >= 1 && user.premium <= 3) {
+                        const daysRemaining = calculateDaysRemaining(user.ended);
+                        premiumUsersHTML += `
+                            <div class="p-4 border-b hover:bg-gray-50">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-lg font-medium">${user.name || 'Guest'}</p>
+                                        <p class="text-sm text-gray-500">${user.referenceNumber || 'Bila Nambari'}</p>
+                                    </div>
+                                    <p class="text-sm ${daysRemaining <= 0 ? 'text-red-600' : 'text-green-600'}">
+                                        ${daysRemaining <= 0 ? 'Imekwisha' : `Siku ${daysRemaining} zimebaki`}
+                                    </p>
+                                </div>
+                                <div class="mt-2 text-sm text-gray-600">
+                                    <p><i class="fas fa-star mr-2"></i>Premium Level: ${user.premium}</p>
+                                    <p><i class="fas fa-calendar-alt mr-2"></i>Tarehe ya Mwisho: ${user.ended || '--'}</p>
+                                </div>
+                            </div>`;
+                    }
+                });
+
+                if (!premiumUsersHTML) {
+                    premiumUsersHTML = `
+                        <p class="p-4 text-center text-gray-500">
+                            <i class="fas fa-users-slash mr-2"></i>Hakuna watumiaji wa Premium
+                        </p>`;
+                }
+
+                document.getElementById('premiumUsersList').innerHTML = premiumUsersHTML;
+            } catch (error) {
+                console.error("Kosa la kupakia:", error);
+                document.getElementById('loading').innerHTML = `
+                    <p class="text-red-500 text-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Hitilafu ya kupakia data
+                    </p>`;
+            }
+        }
+
+        // ======================
+        // 2. KAZI YA KUHESABU SIKU ZILIZOBAKI
+        // ======================
+        function calculateDaysRemaining(endedDate) {
+            if (!endedDate) return 0; // Rudi 0 kama hakuna tarehe
+
+            const today = new Date();
+            const endDate = new Date(endedDate);
+            const timeDiff = endDate - today;
+            const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+            return daysRemaining;
+        }
+
+        // Anza upakiaji
+        loadPremiumUsers();
+    </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tazama Video</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="p-4 bg-gray-800 flex items-center">
+        <a href="home.html" id="backButton" class="text-white"><i class="fas fa-arrow-left mr-2"></i>Nyuma</a>
+    </div>
+    <div class="p-4">
+        <div id="video-container" class="max-w-2xl mx-auto">
+            <!-- Video itawekwa hapa kwa njia ya iframe -->
+        </div>
+        <div id="title-container" class="max-w-2xl mx-auto mt-4">
+            <!-- Kichwa (title) kitawekwa hapa -->
+        </div>
+        <div id="episode-container" class="max-w-2xl mx-auto mt-2">
+            <!-- Episode itawekwa hapa -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Function to convert YouTube URL to embed URL
+        function getYouTubeEmbedUrl(url) {
+            let videoId = '';
+            
+            if (url.includes('youtube.com/watch?v=')) {
+                videoId = url.split('v=')[1];
+                const ampersandPosition = videoId.indexOf('&');
+                if (ampersandPosition !== -1) {
+                    videoId = videoId.substring(0, ampersandPosition);
+                }
+            } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1];
+                const questionMarkPosition = videoId.indexOf('?');
+                if (questionMarkPosition !== -1) {
+                    videoId = videoId.substring(0, questionMarkPosition);
+                }
+            }
+
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+        }
+
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            const title = params.get('title');
+            const episode = params.get('episode');
+            console.log('ID kutoka URL:', id);
+            console.log('Title kutoka URL:', title);
+            console.log('Episode kutoka URL:', episode);
+            return { id, title, episode };
+        }
+
+        async function fetchVideoById(id) {
+            try {
+                const videoRef = ref(database, `video/${id}`);
+                console.log('Inachukua video kutoka Firebase...');
+                const snapshot = await get(videoRef);
+                if (snapshot.exists()) {
+                    const videoData = snapshot.val();
+                    console.log('Data ya video:', videoData);
+                    return videoData;
+                } else {
+                    console.log('Hakuna data inayopatikana kwa ID hii.');
+                    return null;
+                }
+            } catch (error) {
+                console.error('Hitilafu wakati wa kuchukua video:', error);
+                return null;
+            }
+        }
+
+        function displayVideo(video) {
+            console.log('Inaonyesha video...');
+            const videoContainer = document.getElementById('video-container');
+            const titleContainer = document.getElementById('title-container');
+            const episodeContainer = document.getElementById('episode-container');
+
+            // Convert to embed URL and display video
+            const embedUrl = getYouTubeEmbedUrl(video.video_url);
+            videoContainer.innerHTML = `
+                <div class="relative" style="padding-bottom: 56.25%;">
+                    <iframe 
+                        src="${embedUrl}"
+                        class="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            `;
+
+            // Display title
+            titleContainer.innerHTML = `
+                <p class="mt-4 text-2xl font-bold">${video.title}</p>
+            `;
+
+            // Display episode
+            episodeContainer.innerHTML = `
+                <p class="mt-2 text-lg">EPISODE ${video.episode}</p>
+            `;
+        }
+
+        async function loadVideo() {
+            const { id } = getUrlParams();
+            if (id) {
+                const video = await fetchVideoById(id);
+                if (video) {
+                    displayVideo(video);
+                } else {
+                    document.getElementById('video-container').innerHTML = 
+                        '<p class="text-red-500">Video haijapatikana</p>';
+                }
+            } else {
+                document.getElementById('video-container').innerHTML = 
+                    '<p class="text-red-500">Hakuna ID ya video iliyopatikana</p>';
+            }
+        }
+
+        window.onload = loadVideo;
+
+        // Back button handling
+        const backButton = document.getElementById('backButton');
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+            backButton.href = `home.html?userId=${userId}`;
+        }
+    </script>
+</body>
+</html>

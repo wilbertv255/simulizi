@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - Simulizi</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 pb-16">
+        <!-- Kichwa na kitufe cha kurudi -->
+        <div class="flex items-center mb-4">
+            <a href="admin_leo.html" class="mr-2 text-blue-500 hover:text-blue-700">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-bold">Dhibiti Watumiaji</h1>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-4">
+            <input type="text" id="searchInput" 
+                   placeholder="Tafuta kwa jina au nambari ya kumbukumbu..."
+                   class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="text-center py-8">
+            <i class="fas fa-spinner fa-spin fa-2x text-gray-500"></i>
+        </div>
+
+        <!-- Orodha ya Watumiaji -->
+        <div id="usersList" class="bg-white rounded-lg shadow overflow-hidden">
+            <!-- Watumiaji wataonekana hapa -->
+        </div>
+    </div>
+
+    <!-- Popup ya Kusimamia -->
+    <div id="managePopup" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <!-- Kichwa cha Popup -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Huduma za Mtumiaji</h2>
+                <button id="closePopupBtn" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Maelezo ya Mtumiaji -->
+            <div class="mb-4">
+                <p class="mb-2"><i class="fas fa-user mr-2"></i><span id="popupUserName"></span></p>
+                <p class="text-sm text-gray-500"><i class="fas fa-hashtag mr-2"></i><span id="popupUserRef"></span></p>
+            </div>
+
+            <!-- Chaguo za Kuboresha -->
+            <div class="mb-4">
+                <label class="block mb-2 font-medium">Chagua Muda:</label>
+                <select id="upgradeOption" class="w-full p-2 border rounded-lg">
+                    <option value="1">Siku 30 (Premium 1)</option>
+                    <option value="2">Siku 60 (Premium 2)</option>
+                    <option value="3">Siku 90 (Premium 3)</option>
+                </select>
+            </div>
+
+            <!-- Vifungo vya Vitendo -->
+            <div class="grid grid-cols-2 gap-2">
+                <button id="deleteUserBtn" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600">
+                    <i class="fas fa-trash mr-2"></i>Futa
+                </button>
+                <button id="upgradeUserBtn" class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600">
+                    <i class="fas fa-level-up-alt mr-2"></i>Boresha
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get, remove, update } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        // Mpangilio wa Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        // Anza Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        let currentUserId = null;
+
+        // ======================
+        // 1. KAZI YA KUPAKIA WATUMIAJI
+        // ======================
+        async function loadUsers() {
+            try {
+                const usersRef = ref(database, 'users');
+                const snapshot = await get(usersRef);
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (!snapshot.exists()) {
+                    document.getElementById('usersList').innerHTML = `
+                        <p class="p-4 text-center text-gray-500">
+                            <i class="fas fa-users-slash mr-2"></i>Hakuna watumiaji
+                        </p>`;
+                    return;
+                }
+
+                const users = Object.entries(snapshot.val());
+                let usersHTML = '';
+
+                users.forEach(([userId, user]) => {
+                    usersHTML += `
+                        <div class="p-4 border-b hover:bg-gray-50 flex justify-between items-center">
+                            <div>
+                                <p class="${user.premium ? 'text-green-600' : 'text-red-600'} font-medium">
+                                    ${user.name || 'Guest'}
+                                </p>
+                                <p class="text-sm text-gray-500">${user.referenceNumber || 'Bila Nambari'}</p>
+                            </div>
+                            <button onclick="openManagePopup('${userId}', '${user.name}', '${user.referenceNumber}')" 
+                                    class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-cog"></i> Wasimamizi
+                            </button>
+                        </div>`;
+                });
+
+                document.getElementById('usersList').innerHTML = usersHTML;
+            } catch (error) {
+                console.error("Kosa la kupakia:", error);
+                document.getElementById('loading').innerHTML = `
+                    <p class="text-red-500 text-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Hitilafu ya kupakia data
+                    </p>`;
+            }
+        }
+
+        // ======================
+        // 2. FUNCTIONS ZA POPUP
+        // ======================
+        window.openManagePopup = (userId, name, refNumber) => {
+            currentUserId = userId;
+            document.getElementById('popupUserName').textContent = name || 'Guest';
+            document.getElementById('popupUserRef').textContent = refNumber || '--';
+            document.getElementById('managePopup').classList.remove('hidden');
+        };
+
+        // Funga popup
+        document.getElementById('closePopupBtn').addEventListener('click', () => {
+            document.getElementById('managePopup').classList.add('hidden');
+        });
+
+        // ======================
+        // 3. KUFUTA MTUMIAJI
+        // ======================
+        document.getElementById('deleteUserBtn').addEventListener('click', async () => {
+            if (!confirm("Una uhakika unataka kufuta mtumiaji huyu?")) return;
+            
+            try {
+                await remove(ref(database, `users/${currentUserId}`));
+                alert("Mtumiaji amefutwa!");
+                loadUsers();
+                document.getElementById('managePopup').classList.add('hidden');
+            } catch (error) {
+                alert("Kosa la kufuta mtumiaji!");
+                console.error(error);
+            }
+        });
+
+        // ======================
+        // 4. KUBORESHA MTUMIAJI
+        // ======================
+        document.getElementById('upgradeUserBtn').addEventListener('click', async () => {
+            const selectedValue = parseInt(document.getElementById('upgradeOption').value);
+            const daysMap = {1: 30, 2: 60, 3: 90};
+            const newDate = new Date();
+            newDate.setDate(newDate.getDate() + daysMap[selectedValue]);
+
+            try {
+                await update(ref(database, `users/${currentUserId}`), {
+                    premium: selectedValue,
+                    ended: newDate.toISOString().split('T')[0]
+                });
+                alert(`Imefanikiwa! Tarehe mpya: ${newDate.toLocaleDateString()}`);
+                loadUsers();
+                document.getElementById('managePopup').classList.add('hidden');
+            } catch (error) {
+                alert("Kosa la kuboresha mtumiaji!");
+                console.error(error);
+            }
+        });
+
+        // ======================
+        // 5. UTAFUTAJI WA WATUMIAJI
+        // ======================
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const userElements = document.querySelectorAll('#usersList > div');
+            
+            userElements.forEach(user => {
+                const name = user.querySelector('p').textContent.toLowerCase();
+                const ref = user.querySelector('p.text-sm').textContent.toLowerCase();
+                user.style.display = (name.includes(searchTerm) || ref.includes(searchTerm)) 
+                    ? 'flex' 
+                    : 'none';
+            });
+        });
+
+        // Anza upakiaji
+        loadUsers();
+    </script>
+</body>
+</html>

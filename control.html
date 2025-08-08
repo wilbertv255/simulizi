@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control - Simulizi</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 pb-16">
+        <!-- Kichwa -->
+        <div class="flex items-center mb-4">
+            <a href="admin_leo.html" class="mr-2 text-blue-500 hover:text-blue-700">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-bold">Dhibiti Mfumo</h1>
+        </div>
+
+        <!-- Sehemu ya Kuongeza Njia za Malipo -->
+        <div class="mb-6">
+            <button id="addPaymentMethodBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                <i class="fas fa-plus mr-2"></i>Ongeza Njia ya Malipo
+            </button>
+        </div>
+
+        <!-- Modal ya Kuongeza Njia ya Malipo -->
+        <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Ongeza Njia ya Malipo</h2>
+                    <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form id="paymentForm" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Jina:</label>
+                        <input type="text" id="paymentName" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Nambari:</label>
+                        <input type="text" id="paymentNumber" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Chagua Mfumo:</label>
+                        <select id="paymentType" class="w-full p-2 border rounded-lg" required>
+                            <option value="M-Pesa">M-Pesa</option>
+                            <option value="Airtel Money">Airtel Money</option>
+                            <option value="Tigo Pesa">Tigo Pesa</option>
+                            <option value="Halotel">Halotel</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="cancelPaymentBtn" class="bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600">
+                            Ghairi
+                        </button>
+                        <button type="submit" class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600">
+                            Hifadhi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal ya Rekebisha Njia ya Malipo -->
+        <div id="editPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Rekebisha Njia ya Malipo</h2>
+                    <button id="closeEditModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form id="editPaymentForm" class="space-y-4">
+                    <div>
+                        <label class="block mb-2">Jina:</label>
+                        <input type="text" id="editPaymentName" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Nambari:</label>
+                        <input type="text" id="editPaymentNumber" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Chagua Mfumo:</label>
+                        <select id="editPaymentType" class="w-full p-2 border rounded-lg" required>
+                            <option value="M-Pesa">M-Pesa</option>
+                            <option value="Airtel Money">Airtel Money</option>
+                            <option value="Tigo Pesa">Tigo Pesa</option>
+                            <option value="Halotel">Halotel</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="cancelEditPaymentBtn" class="bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600">
+                            Ghairi
+                        </button>
+                        <button type="submit" class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600">
+                            Hifadhi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Orodha ya Njia za Malipo -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <h2 class="text-xl font-bold p-4 bg-gray-800 text-white">Njia za Malipo Zilizopo</h2>
+            <div id="paymentsList" class="p-4">
+                <!-- Njia za malipo zitaonekana hapa -->
+            </div>
+        </div>
+</div>
+
+<!-- Firebase Scripts -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+    import { getDatabase, ref, get, push, update } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+        authDomain: "simulizi23.firebaseapp.com",
+        databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+        projectId: "simulizi23",
+        storageBucket: "simulizi23.firebasestorage.app",
+        messagingSenderId: "306995992624",
+        appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+        measurementId: "G-7RLGM76PSE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // ======================
+    // 1. MODAL YA KUONGEZA NJIA YA MALIPO
+    // ======================
+    document.getElementById('addPaymentMethodBtn').addEventListener('click', () => {
+        document.getElementById('paymentModal').classList.remove('hidden');
+    });
+
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+        document.getElementById('paymentModal').classList.add('hidden');
+    });
+
+    document.getElementById('cancelPaymentBtn').addEventListener('click', () => {
+        document.getElementById('paymentModal').classList.add('hidden');
+    });
+
+    // ======================
+    // 2. KUONGEZA NJIA YA MALIPO
+    // ======================
+    document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const paymentData = {
+            name: document.getElementById('paymentName').value,
+            number: document.getElementById('paymentNumber').value,
+            type: document.getElementById('paymentType').value,
+            createdAt: new Date().toISOString()
+        };
+
+        try {
+            await push(ref(database, 'payments'), paymentData);
+            alert("Njia ya malipo imeongezwa kikamilifu!");
+            document.getElementById('paymentModal').classList.add('hidden');
+            loadPayments();
+        } catch (error) {
+            alert("Kosa la kuongeza njia ya malipo!");
+            console.error(error);
+        }
+    });
+
+    // ======================
+    // 3. KUSOMA NJIA ZA MALIPO
+    // ======================
+    async function loadPayments() {
+        try {
+            const paymentsRef = ref(database, 'payments');
+            const snapshot = await get(paymentsRef);
+
+            if (!snapshot.exists()) {
+                document.getElementById('paymentsList').innerHTML = `
+                    <p class="text-center text-gray-500">
+                        <i class="fas fa-wallet mr-2"></i>Hakuna njia za malipo zilizopo
+                    </p>`;
+                return;
+            }
+
+            const payments = Object.entries(snapshot.val());
+            document.getElementById('paymentsList').innerHTML = payments.map(([id, payment]) => `
+                <div class="p-4 border-b hover:bg-gray-50 flex justify-between items-center">
+                    <div>
+                        <p class="font-medium">${payment.name}</p>
+                        <p class="text-sm text-gray-600">${payment.number}</p>
+                        <p class="text-sm text-gray-600">${payment.type}</p>
+                    </div>
+                    <button data-payment-id="${id}" 
+                            class="text-blue-500 hover:text-blue-700 edit-btn">
+                        <i class="fas fa-edit"></i> Rekebisha
+                    </button>
+                </div>
+            `).join('');
+
+            // Add event listeners to edit buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const paymentId = e.target.closest('button').dataset.paymentId;
+                    const payment = snapshot.val()[paymentId];
+                    openEditModal(paymentId, payment);
+                });
+            });
+
+        } catch (error) {
+            console.error("Error:", error);
+            document.getElementById('paymentsList').innerHTML = `
+                <p class="text-red-500 text-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Hitilafu ya kupakia data
+                </p>`;
+        }
+    }
+
+    // ======================
+    // 4. KUREKEBISHA NJIA YA MALIPO
+    // ======================
+    function openEditModal(paymentId, payment) {
+        document.getElementById('editPaymentName').value = payment.name;
+        document.getElementById('editPaymentNumber').value = payment.number;
+        document.getElementById('editPaymentType').value = payment.type;
+
+        document.getElementById('editPaymentModal').classList.remove('hidden');
+
+        document.getElementById('editPaymentForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const updatedPaymentData = {
+                name: document.getElementById('editPaymentName').value,
+                number: document.getElementById('editPaymentNumber').value,
+                type: document.getElementById('editPaymentType').value,
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                await update(ref(database, `payments/${paymentId}`), updatedPaymentData);
+                alert("Njia ya malipo imeboreshwa kikamilifu!");
+                document.getElementById('editPaymentModal').classList.add('hidden');
+                loadPayments();
+            } catch (error) {
+                alert("Kosa la kuboresha njia ya malipo!");
+                console.error(error);
+            }
+        };
+
+        document.getElementById('closeEditModalBtn').addEventListener('click', () => {
+            document.getElementById('editPaymentModal').classList.add('hidden');
+        });
+
+        document.getElementById('cancelEditPaymentBtn').addEventListener('click', () => {
+            document.getElementById('editPaymentModal').classList.add('hidden');
+        });
+    }
+
+    // Anza upakiaji
+    loadPayments();
+</script>
+</body>
+</html>

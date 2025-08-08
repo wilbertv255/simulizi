@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://kit.fontawesome.com/64d58efce2.js" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/3747864d49.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css" />
+    <title>Sign in & Sign up Form</title>
+<style>
+  .modal {
+    display: none; 
+    position: fixed; 
+    z-index: 9999;  /* Ensure modal is in front */
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgb(0,0,0); 
+    background-color: rgba(0,0,0,0.4); 
+    animation: fadeIn 0.5s; /* Add fadeIn animation */
+  }
+  .container {
+  /* ... styles zako zilizopo ... */
+  min-height: 100vh;
+  overflow: hidden; /* Ili kuzuia scroll zisizohitajika */
+}
+
+.panels-container .content {
+  margin-bottom: 1rem; /* Badilisha kutoka kwa margin kubwa */
+}
+
+.sign-in-form {
+  margin-top: 1rem; /* Punguza nafasi juu ya fomu */
+  padding: 1rem 0; /* Punguza padding */
+}
+
+.sign-in-form .title {
+  margin-bottom: 1rem; /* Punguza nafasi chini ya kichwa */
+}
+
+.input-field {
+  margin: 0.8rem 0; /* Punguza nafasi kati ya input fields */
+}
+
+.btn.solid {
+  margin-top: 1rem; /* Punguza nafasi juu ya button */
+}
+
+  .modal-content {
+    background-color: #fefefe;
+    margin: 0 auto; /* Center horizontally */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; 
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center vertically and horizontally */
+  }
+
+  .close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  .close-btn:hover,
+  .close-btn:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  @keyframes fadeIn {
+    from {opacity: 0;} 
+    to {opacity: 1;}
+  }
+</style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="forms-container">
+        <div class="signin-signup">
+          <form id="sign-in-form" class="sign-in-form">
+            <h2 class="title">Ingia</h2>
+            <div class="input-field">
+              <i class="fas fa-user"></i>
+              <input type="number" id="login-email" placeholder="Number" />
+            </div>
+            <div class="input-field">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="login-password" placeholder="Password" />
+            </div>
+            <input type="submit" value="Login" class="btn solid" />
+
+          </form>
+          <form id="sign-up-form" class="sign-up-form">
+            <h2 class="title">Jisajili</h2>
+            <div class="input-field">
+              <i class="fas fa-user"></i>
+              <input type="text" id="signup-name" placeholder="Username" />
+            </div>
+            <div class="input-field">
+              <i class="fas fa-phone"></i>
+              <input type="number" id="signup-email" placeholder="Number" />
+            </div>
+            <div class="input-field">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="signup-password" placeholder="Password" />
+            </div>
+            <input type="submit" class="btn" value="Sign up" />
+           <!-- <p class="social-text">Or Sign up with social platforms</p>
+            <div class="social-media">
+              <a href="#" id="google-signup" class="social-icon">
+                <i class="fa-brands fa-google"></i>
+              </a>
+            </div>-->
+          </form>
+        </div>
+      </div>
+
+      <div class="panels-container">
+        <div class="panel left-panel">
+          <div class="content">
+            <h3>Wewe ni mgeni ?</h3>
+            <p>
+              Jisajili ili uwe mmoja wa wanao burudika na masimulizi yetu!
+            </p>
+            <button class="btn transparent" id="sign-up-btn">
+              Jisajili
+            </button>
+          </div>
+          <img src="img/log.svg" class="image" alt="" />
+        </div>
+        <div class="panel right-panel">
+          <div class="content">
+            <h3>unayo akaunti ?</h3>
+            <p>
+              Karibu tena, tunafurahia uwepo wako hapa, bonyeza kuingia!
+            </p>
+            <button class="btn transparent" id="sign-in-btn">
+              Ingia
+            </button>
+          </div>
+          <img src="img/register.svg" class="image" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal structure -->
+    <div id="messageModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <p id="modal-message"></p>
+      </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

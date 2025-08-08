@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding - Simba Jamii</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Background ya madowa meupe */
+        body {
+            background: linear-gradient(135deg, #ff0000, #cc0000);
+        }
+        .dot-background {
+            background: radial-gradient(circle, white 10%, transparent 10%);
+            background-size: 20px 20px;
+        }
+        /* Animation ya kuslide slides */
+        .slide {
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .slide-out {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+    </style>
+</head>
+<body class="dot-background">
+    <!-- Onboarding Container -->
+    <div id="onboarding" class="fixed inset-0 flex items-center justify-center z-50 overflow-hidden">
+        <!-- Slide 1: Karibu Simba Jamii -->
+        <div id="slide1" class="slide active text-center p-4 min-w-full">
+            <img src="https://via.placeholder.com/150" alt="Simba" class="w-32 h-32 mx-auto mb-6 rounded-full">
+            <h1 class="text-4xl font-bold mb-4 text-white">Karibu Simba Jamii Yetu</h1>
+            <button onclick="nextSlide('slide2')" class="bg-white text-red-600 px-6 py-2 rounded-lg hover:bg-gray-100">
+                Next
+            </button>
+        </div>
+
+        <!-- Slide 2: Pata Habari na Taarifa -->
+        <div id="slide2" class="slide text-center p-4 min-w-full hidden">
+            <img src="https://via.placeholder.com/150" alt="Notifications" class="w-32 h-32 mx-auto mb-6">
+            <h1 class="text-4xl font-bold mb-4 text-white">Pata Habari na Taarifa za Moja kwa Moja</h1>
+            <p class="text-gray-200 mb-8">Fuata kwa karibu michezo, matokeo, na habari za SimbaSc.</p>
+            <button onclick="nextSlide('slide3')" class="bg-white text-red-600 px-6 py-2 rounded-lg hover:bg-gray-100">
+                Next
+            </button>
+        </div>
+
+        <!-- Slide 3: Jumuika na Jamaa -->
+        <div id="slide3" class="slide text-center p-4 min-w-full hidden">
+            <img src="https://via.placeholder.com/150" alt="Chat" class="w-32 h-32 mx-auto mb-6">
+            <h1 class="text-4xl font-bold mb-4 text-white">Jumuika na Jamaa</h1>
+            <p class="text-gray-200 mb-8">Jadili kuhusu timu yetu, shiriki maoni, na uwe miongoni mwa wafuasi waaminifu.</p>
+            <button onclick="startApp()" class="bg-white text-red-600 px-6 py-2 rounded-lg hover:bg-gray-100">
+                Jisajili
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Content (hidden initially) -->
+    <div id="mainApp" class="hidden">
+        <header class="text-center py-5 bg-red-600">
+            <h1 class="text-3xl font-bold text-white">Simba Jamii</h1>
+            <p class="text-gray-200">Karibu kwenye jukwaa la wafuasi wa SimbaSc!</p>
+        </header>
+
+        <main class="p-5">
+            <!-- Content ya App hapa -->
+        </main>
+
+        <footer class="text-center py-4 bg-red-600 mt-5">
+            <p class="text-white">Haki zimehifadhiwa &copy; 2023 Simba Jamii</p>
+        </footer>
+    </div>
+
+    <script>
+        // Onboarding Slides Logic
+        function nextSlide(nextSlideId) {
+            const currentSlide = document.querySelector('.slide.active');
+            const nextSlide = document.getElementById(nextSlideId);
+
+            // Fanya slide ya sasa iwe out
+            currentSlide.classList.remove('active');
+            currentSlide.classList.add('slide-out');
+
+            // Onyesha slide inayofuata
+            setTimeout(() => {
+                currentSlide.classList.add('hidden');
+                nextSlide.classList.remove('hidden');
+                nextSlide.classList.add('active');
+            }, 500); // Muda wa animation
+        }
+
+        // Function ya kufunga onboarding na kuonyesha main App
+        function startApp() {
+            const onboarding = document.getElementById('onboarding');
+            const mainApp = document.getElementById('mainApp');
+
+            onboarding.classList.add('hidden'); // Ficha onboarding
+            mainApp.classList.remove('hidden'); // Onyesha main App
+        }
+    </script>
+</body>
+</html>

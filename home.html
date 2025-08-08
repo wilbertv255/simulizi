@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .active { color: blue; }
+        .inactive { color: gray; }
+        #infoModal, #lockedModal { transition: opacity 0.3s ease; }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <!-- Search Bar -->
+    <div class="flex items-center p-4">
+        <div class="relative w-full">
+            <input id="searchInput" class="w-full bg-gray-800 text-gray-400 rounded-full pl-10 pr-4 py-2" placeholder="Search Story Unayotaka..." type="text"/>
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+    </div>
+
+    <!-- Content Section -->
+    <div id="content" class="grid grid-cols-2 gap-4 p-4"></div>
+
+    <!-- Navigation Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-gray-900 text-gray-400 flex justify-around py-2">
+        <div class="flex flex-col items-center navigation-item active" data-section="words">
+            <i class="fas fa-book"></i>
+            <span class="text-xs">Soma</span>
+        </div>
+        <div class="flex flex-col items-center navigation-item inactive" data-section="video">
+            <i class="fas fa-video"></i>
+            <span class="text-xs">Video</span>
+        </div>
+        <div class="flex flex-col items-center navigation-item inactive" data-section="audio">
+            <i class="fas fa-headphones"></i>
+            <span class="text-xs">Sikiliza</span>
+        </div>
+        <div class="flex flex-col items-center navigation-item inactive" id="infoButton">
+            <i class="fas fa-info-circle"></i>
+            <span class="text-xs">Info</span>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+        <div class="bg-gray-800 p-4 rounded-lg text-white relative">
+            <button class="absolute top-0 right-0 mt-2 mr-2 text-white" id="closeModal">X</button>
+            <h2 class="text-lg" id="userName">Null</h2>
+            <p id="premiumStatus">ingia / jisajili kuendelea</p>
+            <button id="addPackageButton" class="bg-blue-500 text-white py-2 px-4 rounded mt-4">Ongeza Kifurusha</button>
+            <button class="bg-green-500 text-white py-2 px-4 rounded mt-4">Msaada</button>
+            <div class="mt-4">
+                <div class="flex flex-col space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <a href="https://www.facebook.com/share/1AHCMbt7M3/" class="text-white"><i class="fab fa-facebook"></i>
+                        <p>Follow us on Facebook</p></a>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="https://x.com/Simulizisultan?t=XL6PX2xb7nv3PGvEkVje6A&s=09" class="text-white"><i class="fab fa-twitter"></i>
+                        <p>Follow us on Twitter</p></a>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="#" class="text-white"><i class="fab fa-instagram"></i></a>
+                        <p>Follow us on Instagram</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="https://wa.me/message/IEZWHZEUDHQ6H1" class="text-white"><i class="fab fa-whatsapp"></i>
+                        <p>Follow us on WhatsApp</p></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Locked Content Modal -->
+<div id="lockedModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center opacity-0 transition-opacity duration-300">
+    <div class="bg-gray-800 p-6 rounded-lg text-white text-center w-80"> <!-- Added w-80 for 20rem (320px) width -->
+        <p class="text-lg">Simulizi hii itakujia hivi karibuni! Kaa karibu nasi.</p>
+        <button id="closeLockedModal" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Funga</button>
+    </div>
+</div>
+<br>
+<br>
+
+    <!-- Firebase Scripts -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+        authDomain: "simulizi23.firebaseapp.com",
+        databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+        projectId: "simulizi23",
+        storageBucket: "simulizi23.firebasestorage.app",
+        messagingSenderId: "306995992624",
+        appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+        measurementId: "G-7RLGM76PSE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let userId = urlParams.get('userId');
+
+    if (userId) {
+        localStorage.setItem('userId', userId);
+    } else {
+        userId = localStorage.getItem('userId');
+        if (!userId) {
+            window.location.href = "index.html";
+        }
+    }
+
+    if (userId) {
+        const userRef = ref(database, 'users/' + userId);
+        get(userRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                document.getElementById('userName').textContent = userData.name || "Mtumiaji Asiyejulikana";
+                const premiumStatus = document.getElementById('premiumStatus');
+                const addPackageButton = document.getElementById('addPackageButton');
+                if (userData.premium === 1 || userData.premium === 2 || userData.premium === 3) {
+                    premiumStatus.textContent = "Kifurusha chako kipo hai.";
+                    premiumStatus.classList.add('bg-green-500', 'p-2', 'rounded');
+                    addPackageButton.style.display = 'none';
+                } else {
+                    premiumStatus.textContent = "Hauna kifurusha kwa sasa.";
+                    premiumStatus.classList.add('bg-red-500', 'p-2', 'rounded');
+                    addPackageButton.style.display = 'block';
+                    addPackageButton.addEventListener('click', () => {
+                        window.location.href = `payment.html?userId=${userId}`;
+                    });
+                }
+            } else {
+                document.getElementById('userName').textContent = "Mtumiaji Hajapatikana";
+                document.getElementById('premiumStatus').textContent = "Tafadhali ingia kuendelea.";
+                document.getElementById('premiumStatus').classList.add('bg-red-500', 'p-2', 'rounded');
+                document.getElementById('addPackageButton').addEventListener('click', () => {
+                    window.location.href = `index.html`;
+                });
+            }
+        }).catch((error) => {
+            console.error("Hitilafu wakati wa kupakia data ya mtumiaji:", error);
+        });
+    }
+
+    let allContent = [];
+    let displayedContent = [];
+    const BATCH_SIZE = 7; // Kupakia vitu saba kwa kila kundi
+    let currentIndex = 0;
+
+    function loadContent(section) {
+        const sectionRef = ref(database, section);
+        return get(sectionRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                return Object.keys(data).map(key => ({
+                    id: key,
+                    ...data[key],
+                    section
+                }));
+            } else {
+                return [];
+            }
+        });
+    }
+
+    function displayContent(content, append = false) {
+        const contentElement = document.getElementById('content');
+        let htmlContent = append ? contentElement.innerHTML : '';
+        const seenTitles = new Set(displayedContent.map(item => item.title));
+
+        const batch = content.slice(currentIndex, currentIndex + BATCH_SIZE);
+        batch.forEach(item => {
+            if (!seenTitles.has(item.title)) {
+                seenTitles.add(item.title);
+                displayedContent.push(item);
+
+                let link = '';
+                if (item.section === 'words') {
+                    link = `view_soma.html?userId=${userId}&id=${item.id}&title=${encodeURIComponent(item.title)}`;
+                } else if (item.section === 'video') {
+                    link = `view_video.html?userId=${userId}&id=${item.id}&title=${encodeURIComponent(item.title)}`;
+                } else if (item.section === 'audio') {
+                    link = `view_audio.html?userId=${userId}&id=${item.id}&title=${encodeURIComponent(item.title)}`;
+                }
+
+                htmlContent += `
+                    <div class="bg-gray-800 rounded-lg overflow-hidden cursor-pointer" data-lock="${item.lock !== undefined ? item.lock : 0}" data-link="${link}">
+                        <img alt="${item.title}" class="w-full h-48 object-cover" src="${item.image_url}"/>
+                        <div class="p-2 text-center">
+                            <p class="text-white">${item.title}</p>
+                        </div>
+                    </div>`;
+            }
+        });
+
+        contentElement.innerHTML = htmlContent;
+        currentIndex += batch.length;
+
+        document.querySelectorAll('#content > div').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                const lockValue = parseInt(this.getAttribute('data-lock')) || 0;
+                const link = this.getAttribute('data-link');
+                
+                if (lockValue === 1) {
+                    showLockedModal();
+                } else {
+                    window.location.href = link;
+                }
+            });
+        });
+    }
+
+    function searchContent(query) {
+        const filteredContent = allContent.filter(item =>
+            item.title.toLowerCase().includes(query.toLowerCase())
+        );
+        currentIndex = 0;
+        displayedContent = [];
+        displayContent(filteredContent);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (query) {
+            searchContent(query);
+        } else {
+            changeContent(currentSection);
+        }
+    });
+
+    let currentSection = 'words';
+    function changeContent(section) {
+        currentSection = section;
+        currentIndex = 0;
+        displayedContent = [];
+        const navItems = document.querySelectorAll('.navigation-item');
+
+        navItems.forEach(item => {
+            item.classList.remove('active');
+            item.classList.add('inactive');
+        });
+
+        const activeElement = document.querySelector(`[data-section="${section}"]`);
+        if (activeElement) {
+            activeElement.classList.add('active');
+            activeElement.classList.remove('inactive');
+        }
+
+        loadContent(section).then(data => {
+            allContent = data.map(item => ({ ...item, section }));
+            displayContent(allContent);
+        });
+    }
+
+    function toggleModal() {
+        document.getElementById('infoModal').classList.toggle('hidden');
+    }
+
+    function showLockedModal() {
+        const modal = document.getElementById('lockedModal');
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    }
+
+    function hideLockedModal() {
+        const modal = document.getElementById('lockedModal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    // Lazy loading kwa kuskrol
+    function handleScroll() {
+        if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && currentIndex < allContent.length) {
+            displayContent(allContent, true);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll('.navigation-item').forEach(item => {
+            item.addEventListener("click", function () {
+                const section = this.getAttribute("data-section");
+                if (section) {
+                    changeContent(section);
+                }
+            });
+        });
+
+        document.getElementById('infoButton').addEventListener("click", toggleModal);
+        document.getElementById('closeModal').addEventListener("click", toggleModal);
+        document.getElementById('closeLockedModal').addEventListener("click", hideLockedModal);
+
+        document.getElementById('lockedModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('lockedModal')) {
+                hideLockedModal();
+            }
+        });
+
+        // Sikiliza tukio la kuskrol
+        window.addEventListener('scroll', handleScroll);
+
+        changeContent('words');
+    });
+</script>
+</body>
+</html>

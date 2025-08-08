@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Article</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.appspot.com",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        function getPostId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        async function fetchPostById(id) {
+            try {
+                const postRef = ref(database, `words/${id}`);
+                const snapshot = await get(postRef);
+                return snapshot.exists() ? snapshot.val() : null;
+            } catch (error) {
+                console.error('Error:', error);
+                return null;
+            }
+        }
+
+        function displayPost(post) {
+            const imageContainer = document.getElementById('image-container');
+            const descriptionContainer = document.getElementById('description-container');
+
+            if (post.image_url) {
+                imageContainer.innerHTML = `
+                    <img src="${post.image_url}" alt="${post.title}" 
+                         class="w-full h-64 object-cover rounded-lg shadow-lg">
+                `;
+            }
+
+            descriptionContainer.innerHTML = `
+                <div class="mt-4 p-4 bg-gray-800 rounded-lg">
+                    <p class="text-gray-300 whitespace-pre-line">${post.description}</p>
+                </div>
+            `;
+        }
+
+        async function loadPost() {
+            const postId = getPostId();
+            if (!postId) return;
+
+            const post = await fetchPostById(postId);
+            if (!post) return;
+
+            displayPost(post);
+        }
+
+        window.onload = loadPost;
+    </script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="p-4 bg-gray-800">
+        <a href="home.html" class="text-white">
+        </a>
+    </div>
+    <div class="p-4">
+        <div id="image-container"></div>
+        <div id="description-container" class="mt-4"></div>
+    </div>
+</body>
+</html>

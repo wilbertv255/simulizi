@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .active {
+            color: blue; /* Change to blue when active */
+        }
+        .inactive {
+            color: gray; /* Change to gray when inactive */
+        }
+        #infoModal {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <!-- Search Bar -->
+    <div class="flex items-center p-4">
+        <div class="relative w-full">
+            <input class="w-full bg-gray-800 text-gray-400 rounded-full pl-10 pr-4 py-2" placeholder="Search Story Unayotaka..." type="text"/>
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+    </div>
+    <!-- Content -->
+    <div id="content" class="grid grid-cols-2 gap-4 p-4">
+        <div class="bg-gray-800 rounded-lg overflow-hidden">
+            <img alt="Silhouette of a couple standing on the beach during sunset" class="w-full h-48 object-cover" height="400" src="https://storage.googleapis.com/a1aa/image/O7V0Kh31UnLZ43gyLYUTCAOpB72D1ovo-ZloP4lMHCk.jpg" width="300"/>
+            <div class="p-2 text-center">
+                <p class="text-white">MY DEAR<span class="inline-block"> 👫❤️</span></p>
+            </div>
+        </div>
+        <div class="bg-gray-800 rounded-lg overflow-hidden">
+            <img alt="A couple embracing each other and smiling" class="w-full h-48 object-cover" height="400" src="https://storage.googleapis.com/a1aa/image/8dBONf3LqhXX4u2Jlwi5OVLp0yC548Gootmps_JxVTk.jpg" width="300"/>
+            <div class="p-2 text-center">
+                <p class="text-white">YATAPITA<span class="inline-block"> 😔❤️</span></p>
+            </div>
+        </div>
+    </div>
+    <!-- Navigation Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-gray-900 text-gray-400 flex justify-around py-2">
+        <div class="flex flex-col items-center navigation-item active" onclick="changeContent('soma', this)">
+            <i class="fas fa-book"></i>
+            <span class="text-xs">Soma</span>
+        </div>
+        <div class="flex flex-col items-center navigation-item inactive" onclick="openPage('video')">
+            <i class="fas fa-video"></i>
+            <span class="text-xs">Video</span>
+        </div>
+        <div class="flex flex-col items-center navigation-item inactive" onclick="openPage('sikiliza')">
+            <i class="fas fa-headphones"></i>
+            <span class="text-xs">Sikiliza</span>
+        </div>
+        <div class="flex flex-col items-center navigation-item inactive" onclick="toggleModal()">
+            <i class="fas fa-info-circle"></i>
+            <span class="text-xs">Info</span>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+        <div class="bg-gray-800 p-4 rounded-lg text-white relative">
+            <button class="absolute top-0 right-0 mt-2 mr-2 text-white" onclick="toggleModal()">X</button>
+            <h2 class="text-lg" id="userName">Null</h2>
+            <p id="premiumStatus">ingia / jisajili kuendelea</p> <!-- Premium status message -->
+            <button class="bg-blue-500 text-white py-2 px-4 rounded mt-4">Ongeza Kifurusha</button>
+            <button class="bg-green-500 text-white py-2 px-4 rounded mt-4">Msaada</button>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        // Get userId from URL
+        const params = new URLSearchParams(window.location.search);
+        const userId = params.get('userId');
+
+        // Fetch user's name and premium status from Firebase
+        if (userId) {
+            const userRef = ref(database, 'users/' + userId);
+
+            get(userRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    document.getElementById('userName').innerText = userData.name || 'Hakuna Jina'; // Check if name exists
+
+                    // Check premium status
+                    const premiumStatus = document.getElementById('premiumStatus');
+                    if (userData.premium === 0) {
+                        premiumStatus.innerText = "Hakuna kifurushi kwa sasa.";
+                    } else if (userData.premium === 1) {
+                        premiumStatus.innerText = "Kifurushi cha mwezi kipo hai.";
+                    } else {
+                        premiumStatus.innerText = "Imeshindwa kupata taarifa.";
+                    }
+                } else {
+                    console.log('No user data found');
+                }
+            }).catch((error) => {
+                console.log('Error fetching user data:', error);
+            });
+        } else {
+            console.log('No userId found in URL');
+        }
+    </script>
+
+    <!-- Custom Scripts -->
+    <script>
+        function changeContent(section, element) {
+            const content = document.getElementById('content');
+            const navItems = document.querySelectorAll('.navigation-item');
+
+            // Remove active class from all nav items and add inactive class
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                item.classList.add('inactive');
+            });
+
+            // Add active class to the clicked nav item and remove inactive class
+            element.classList.add('active');
+            element.classList.remove('inactive');
+
+            let htmlContent = '';
+
+            if (section === 'soma') {
+                htmlContent = `<div class="bg-gray-800 rounded-lg overflow-hidden">
+                    <img alt="Book" class="w-full h-48 object-cover" src="your-book-image-url"/>
+                    <div class="p-2 text-center">
+                        <p class="text-white">Soma</p>
+                    </div>
+                </div>`;
+            }
+
+            content.innerHTML = htmlContent;
+        }
+
+        function toggleModal() {
+            const modal = document.getElementById('infoModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function openPage(page) {
+            if (page === 'video') {
+                window.open('home_video.html', '_blank');
+            } else if (page === 'sikiliza') {
+                window.open('home_audio.html', '_blank');
+            }
+        }
+
+        // Set "Soma" as default content
+        changeContent('soma', document.querySelector('.navigation-item.active'));
+    </script>
+</body>
+</html>

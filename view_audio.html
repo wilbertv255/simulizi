@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Audio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        /* Modal style */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            margin: 20px auto;
+            color: black;
+            position: relative;
+        }
+        .modal-close {
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <div class="p-4">
+        <h1 id="contentTitle" class="text-2xl font-bold"></h1>
+        <div id="mainPost" class="mt-4">
+            <!-- Audio kuu itawekwa hapa -->
+        </div>
+        <h2 class="text-xl mt-6">Audio Nyingine</h2>
+        <div id="relatedPosts" class="mt-4 grid grid-cols-2 gap-4">
+            <!-- Audio nyingine zitawekwa hapa -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Tafadhali Lipia</h2>
+            <p class="mb-4">Ili kupata audio hii, unahitaji kuwa na kifurushi cha premium.</p>
+            <a id="paymentLink" href="#" class="bg-blue-600 text-white py-2 px-4 rounded-lg inline-block">
+                Lipia Sasa
+            </a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('userId');
+        const audioId = urlParams.get('id');
+        let title = decodeURIComponent(urlParams.get('title')).replace(/%20/g, ' ').trim();
+
+        document.getElementById('contentTitle').textContent = title;
+
+        function addAudioClickHandler(element, audio) {
+            element.addEventListener('click', async (event) => {
+                event.preventDefault();
+
+                if (!userId) {
+                    showModal("Unahitaji kuingia kwanza", "index.html");
+                    return;
+                }
+
+                const userSnapshot = await get(ref(database, `users/${userId}`));
+                if (!userSnapshot.exists()) {
+                    showModal("Mtumiaji hajapatikana", "index.html");
+                    return;
+                }
+
+                const userData = userSnapshot.val();
+                const premiumStatus = userData.premium || 0;
+
+                const audioSnapshot = await get(ref(database, `audio/${audio.id}`));
+                if (!audioSnapshot.exists()) {
+                    alert("Audio haipatikani");
+                    return;
+                }
+
+                const audioData = audioSnapshot.val();
+                const audioStatus = audioData.status || 0;
+
+                if (premiumStatus === 0 && audioStatus === 0) {
+                    showModal(
+                        "Huduma ya Premium Inahitajika",
+                        `payment.html?userId=${userId}`
+                    );
+                } else {
+                    window.location.href = element.href;
+                }
+            });
+        }
+
+        function showModal(message, paymentUrl) {
+            const modal = document.getElementById('modalOverlay');
+            const paymentLink = document.getElementById('paymentLink');
+            
+            document.querySelector('.modal-content p').textContent = message;
+            paymentLink.href = paymentUrl;
+            modal.style.display = 'block';
+        }
+
+        function closeModal(event) {
+            if (event) {
+                const modalContent = document.querySelector('.modal-content');
+                if (modalContent && !modalContent.contains(event.target)) {
+                    document.getElementById('modalOverlay').style.display = 'none';
+                }
+            } else {
+                document.getElementById('modalOverlay').style.display = 'none';
+            }
+        }
+
+        async function fetchAudioById(audioId) {
+            const snapshot = await get(ref(database, `audio/${audioId}`));
+            if (snapshot.exists()) {
+                return { id: audioId, ...snapshot.val() };
+            }
+            return null;
+        }
+
+        async function fetchRelatedAudios(title) {
+            const audiosRef = ref(database, 'audio');
+            const queryRef = query(audiosRef, orderByChild('title'));
+            const snapshot = await get(queryRef);
+            if (snapshot.exists()) {
+                const allAudios = snapshot.val();
+                return Object.keys(allAudios).map(key => ({
+                    id: key,
+                    ...allAudios[key]
+                })).filter(audio => {
+                    const audioTitle = audio.title.toLowerCase().replace(/"/g, '').trim();
+                    const searchTitle = title.toLowerCase().replace(/"/g, '').trim();
+                    return audioTitle.includes(searchTitle) && audio.id !== audioId;
+                });
+            }
+            return [];
+        }
+
+        function displayMainAudio(audio) {
+            if (!audio) {
+                document.getElementById('mainPost').innerHTML = `<p class="text-gray-400">Audio haipatikani.</p>`;
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = `view3.html?id=${audio.id}&title=${encodeURIComponent(audio.title)}&episode=${audio.episode}`;
+            
+            link.innerHTML = `
+                <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                    <p class="text-gray-400">Episode: ${audio.episode || 'N/A'}</p>
+                    <img src="${audio.image_url}" class="w-full h-48 rounded-lg object-cover" alt="${audio.title}">
+                </div>
+            `;
+
+            addAudioClickHandler(link, audio);
+            document.getElementById('mainPost').appendChild(link);
+        }
+
+        function displayRelatedAudios(audios) {
+            const relatedPostsDiv = document.getElementById('relatedPosts');
+            relatedPostsDiv.innerHTML = '';
+
+            if (audios.length === 0) {
+                relatedPostsDiv.innerHTML = `<p class="text-gray-400">Muendelezo utakuwepo hivi karibuni.</p>`;
+                return;
+            }
+
+            audios.forEach(audio => {
+                const link = document.createElement('a');
+                link.classList.add('bg-gray-700', 'p-3', 'rounded-lg', 'card', 'hover:bg-gray-600', 'max-w-xs', 'mx-auto');
+                link.href = `view3.html?id=${audio.id}&title=${encodeURIComponent(audio.title)}&episode=${audio.episode}`;
+
+                link.innerHTML = `
+                    <p class="text-gray-400">Episode: ${audio.episode || 'N/A'}</p>
+                    <img src="${audio.image_url}" class="w-full h-32 rounded-lg object-cover" alt="${audio.title}">
+                `;
+
+                addAudioClickHandler(link, audio);
+                relatedPostsDiv.appendChild(link);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            const mainAudio = await fetchAudioById(audioId);
+            displayMainAudio(mainAudio);
+
+            const relatedAudios = await fetchRelatedAudios(title);
+            displayRelatedAudios(relatedAudios);
+        });
+    </script>
+</body>
+</html>

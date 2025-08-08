@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Words Content - Simulizi</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        .description-clamp {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 pb-16">
+        <!-- Kichwa na search bar -->
+        <div class="mb-6">
+            <div class="flex items-center mb-4">
+                <a href="admin_leo.html" class="mr-2 text-blue-500 hover:text-blue-700">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1 class="text-2xl font-bold">Makala Zote</h1>
+            </div>
+            <input type="text" id="searchInput" placeholder="Tafuta makala..." 
+                   class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="text-center py-8">
+            <i class="fas fa-spinner fa-spin fa-2x text-gray-500"></i>
+        </div>
+
+        <!-- Orodha ya Makala -->
+        <div id="wordsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Makala zitaonekana hapa -->
+        </div>
+    </div>
+
+    <!-- Popup ya Kusimamia -->
+    <div id="managePopup" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Simamia Makala</h2>
+                <button id="closePopupBtn" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="editForm" class="space-y-4">
+                <div>
+                    <label class="block mb-2">Maelezo:</label>
+                    <textarea id="editDescription" class="w-full p-2 border rounded-lg h-24"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2">Episode:</label>
+                        <input type="text" id="editEpisode" class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block mb-2">Hali:</label>
+                        <select id="editStatus" class="w-full p-2 border rounded-lg">
+                            <option value="1">Free</option>
+                            <option value="0">Premium</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-6">
+                    <button type="button" id="deleteWordBtn" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600">
+                        <i class="fas fa-trash mr-2"></i>Futa
+                    </button>
+                    <button type="submit" class="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-save mr-2"></i>Hifadhi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get, remove, update } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        let currentWordId = null;
+
+        // Load words
+        async function loadWords() {
+            try {
+                const wordsRef = ref(database, 'words');
+                const snapshot = await get(wordsRef);
+                document.getElementById('loading').style.display = 'none';
+
+                if (!snapshot.exists()) {
+                    document.getElementById('wordsList').innerHTML = `
+                        <div class="col-span-full text-center text-gray-500 p-4">
+                            <i class="fas fa-book-open mr-2"></i>Hakuna makala zilizopo
+                        </div>`;
+                    return;
+                }
+
+                const words = Object.entries(snapshot.val());
+                document.getElementById('wordsList').innerHTML = words.map(([id, word]) => `
+                    <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+                        <img src="${word.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" 
+                             class="w-full h-48 object-cover rounded-t-lg"
+                             alt="${word.title}">
+                        <div class="p-4">
+                            <h3 class="font-bold mb-2">${word.title}</h3>
+                            <p class="text-sm text-gray-600 description-clamp">${word.description || 'Hakuna maelezo'}</p>
+                            <div class="flex items-center justify-between mt-4">
+                                <span class="text-sm ${word.status === 1 ? 'text-green-600' : 'text-red-600'}">
+                                    ${word.status === 1 ? 'FREE' : 'PREMIUM'}
+                                </span>
+                                <div class="flex space-x-2">
+                                    <button data-word-id="${id}" 
+                                            class="text-blue-500 hover:text-blue-700 edit-btn">
+                                        <i class="fas fa-cog"></i> Simamia
+                                    </button>
+                                    <button data-word-id="${id}" 
+                                            class="toggle-lock-btn ${word.lock === 1 ? 'text-yellow-500' : 'text-gray-500'} hover:text-yellow-700"
+                                            title="${word.lock === 1 ? 'Unlock' : 'Lock'}">
+                                        <i class="fas ${word.lock === 1 ? 'fa-lock' : 'fa-unlock'}"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Event listeners for edit buttons
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const wordId = e.target.closest('button').dataset.wordId;
+                        const word = snapshot.val()[wordId];
+                        openManagePopup(wordId, word.description, word.episode, word.status);
+                    });
+                });
+
+                // Event listeners for lock/unlock buttons
+                document.querySelectorAll('.toggle-lock-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const wordId = e.target.closest('button').dataset.wordId;
+                        const word = snapshot.val()[wordId];
+                        const newLockValue = word.lock === 1 ? 0 : 1; // Toggle between 0 and 1
+
+                        try {
+                            await update(ref(database, `words/${wordId}`), { lock: newLockValue });
+                            loadWords(); // Refresh the list
+                        } catch (error) {
+                            console.error("Error toggling lock:", error);
+                            alert("Hitilafu wakati wa kubadili hali ya lock!");
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById('loading').innerHTML = `
+                    <p class="text-red-500 text-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Hitilafu ya kupakia data
+                    </p>`;
+            }
+        }
+
+        // Popup functions
+        function openManagePopup(wordId, description, episode, status) {
+            currentWordId = wordId;
+            document.getElementById('editDescription').value = description || '';
+            document.getElementById('editEpisode').value = episode || '';
+            document.getElementById('editStatus').value = status;
+            document.getElementById('managePopup').classList.remove('hidden');
+        }
+
+        document.getElementById('closePopupBtn').addEventListener('click', () => {
+            document.getElementById('managePopup').classList.add('hidden');
+        });
+
+        // Delete word
+        document.getElementById('deleteWordBtn').addEventListener('click', async () => {
+            if (!confirm("Una uhakika unataka kufuta makala hii?")) return;
+            await remove(ref(database, `words/${currentWordId}`));
+            loadWords();
+            document.getElementById('managePopup').classList.add('hidden');
+        });
+
+        // Edit word
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const updates = {
+                description: document.getElementById('editDescription').value,
+                episode: document.getElementById('editEpisode').value,
+                status: parseInt(document.getElementById('editStatus').value)
+            };
+            await update(ref(database, `words/${currentWordId}`), updates);
+            loadWords();
+            document.getElementById('managePopup').classList.add('hidden');
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('#wordsList > div').forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const desc = card.querySelector('p').textContent.toLowerCase();
+                card.style.display = (title.includes(term) || desc.includes(term)) 
+                    ? 'block' 
+                    : 'none';
+            });
+        });
+
+        // Initialize
+        loadWords();
+    </script>
+</body>
+</html>

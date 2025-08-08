@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Video</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        /* Modal style */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            margin: 20px auto;
+            color: black;
+            position: relative;
+        }
+        .modal-close {
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+    <div class="p-4">
+        <h1 id="contentTitle" class="text-2xl font-bold"></h1>
+        <div id="mainPost" class="mt-4">
+            <!-- Video kuu itawekwa hapa -->
+        </div>
+        <h2 class="text-xl mt-6">Video Zingine</h2>
+        <div id="relatedPosts" class="mt-4 grid grid-cols-2 gap-4">
+            <!-- Video nyingine zitawekwa hapa -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Tafadhali Lipia</h2>
+            <p class="mb-4">Ili kupata video hii, unahitaji kuwa na kifurushi cha premium.</p>
+            <a id="paymentLink" href="#" class="bg-blue-600 text-white py-2 px-4 rounded-lg inline-block">
+                Lipia Sasa
+            </a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('userId');
+        const videoId = urlParams.get('id');
+        let title = decodeURIComponent(urlParams.get('title')).replace(/%20/g, ' ').trim();
+
+        document.getElementById('contentTitle').textContent = title;
+
+        function addVideoClickHandler(element, video) {
+            element.addEventListener('click', async (event) => {
+                event.preventDefault();
+
+                if (!userId) {
+                    showModal("Unahitaji kuingia kwanza", "index.html");
+                    return;
+                }
+
+                const userSnapshot = await get(ref(database, `users/${userId}`));
+                if (!userSnapshot.exists()) {
+                    showModal("Mtumiaji hajapatikana", "index.html");
+                    return;
+                }
+
+                const userData = userSnapshot.val();
+                const premiumStatus = userData.premium || 0;
+
+                const videoSnapshot = await get(ref(database, `video/${video.id}`));
+                if (!videoSnapshot.exists()) {
+                    alert("Video haipatikani");
+                    return;
+                }
+
+                const videoData = videoSnapshot.val();
+                const videoStatus = videoData.status || 0;
+
+                if (premiumStatus === 0 && videoStatus === 0) {
+                    showModal(
+                        "Huduma ya Premium Inahitajika",
+                        `payment.html?userId=${userId}`
+                    );
+                } else {
+                    window.location.href = element.href;
+                }
+            });
+        }
+
+        function showModal(message, paymentUrl) {
+            const modal = document.getElementById('modalOverlay');
+            const paymentLink = document.getElementById('paymentLink');
+            
+            document.querySelector('.modal-content p').textContent = message;
+            paymentLink.href = paymentUrl;
+            modal.style.display = 'block';
+        }
+
+        function closeModal(event) {
+            if (event) {
+                const modalContent = document.querySelector('.modal-content');
+                if (modalContent && !modalContent.contains(event.target)) {
+                    document.getElementById('modalOverlay').style.display = 'none';
+                }
+            } else {
+                document.getElementById('modalOverlay').style.display = 'none';
+            }
+        }
+
+        async function fetchVideoById(videoId) {
+            const snapshot = await get(ref(database, `video/${videoId}`));
+            if (snapshot.exists()) {
+                return { id: videoId, ...snapshot.val() };
+            }
+            return null;
+        }
+
+        async function fetchRelatedVideos(title) {
+            const videosRef = ref(database, 'video');
+            const queryRef = query(videosRef, orderByChild('title'));
+            const snapshot = await get(queryRef);
+            if (snapshot.exists()) {
+                const allVideos = snapshot.val();
+                return Object.keys(allVideos).map(key => ({
+                    id: key,
+                    ...allVideos[key]
+                })).filter(video => {
+                    const videoTitle = video.title.toLowerCase().replace(/"/g, '').trim();
+                    const searchTitle = title.toLowerCase().replace(/"/g, '').trim();
+                    return videoTitle.includes(searchTitle) && video.id !== videoId;
+                });
+            }
+            return [];
+        }
+
+        function displayMainVideo(video) {
+            if (!video) {
+                document.getElementById('mainPost').innerHTML = `<p class="text-gray-400">Video haipatikani.</p>`;
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = `view2.html?id=${video.id}&title=${encodeURIComponent(video.title)}&episode=${video.episode}`;
+            
+            link.innerHTML = `
+                <div class="bg-gray-800 p-4 rounded-lg mb-4">
+                    <p class="text-gray-400">Episode: ${video.episode || 'N/A'}</p>
+                    <img src="${video.image_url}" class="w-full h-48 rounded-lg object-cover" alt="${video.title}">
+                </div>
+            `;
+
+            addVideoClickHandler(link, video);
+            document.getElementById('mainPost').appendChild(link);
+        }
+
+        function displayRelatedVideos(videos) {
+            const relatedPostsDiv = document.getElementById('relatedPosts');
+            relatedPostsDiv.innerHTML = '';
+
+            if (videos.length === 0) {
+                relatedPostsDiv.innerHTML = `<p class="text-gray-400">Muendelezo utakuwepo hivi karibuni.</p>`;
+                return;
+            }
+
+            videos.forEach(video => {
+                const link = document.createElement('a');
+                link.classList.add('bg-gray-700', 'p-3', 'rounded-lg', 'card', 'hover:bg-gray-600', 'max-w-xs', 'mx-auto');
+                link.href = `view2.html?id=${video.id}&title=${encodeURIComponent(video.title)}&episode=${video.episode}`;
+
+                link.innerHTML = `
+                    <p class="text-gray-400">Episode: ${video.episode || 'N/A'}</p>
+                    <img src="${video.image_url}" class="w-full h-32 rounded-lg object-cover" alt="${video.title}">
+                `;
+
+                addVideoClickHandler(link, video);
+                relatedPostsDiv.appendChild(link);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            const mainVideo = await fetchVideoById(videoId);
+            displayMainVideo(mainVideo);
+
+            const relatedVideos = await fetchRelatedVideos(title);
+            displayRelatedVideos(relatedVideos);
+        });
+    </script>
+</body>
+</html>

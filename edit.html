@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Hariri Posts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        /* CSS yako ya awali haibadiliki, lakini tunaongeza hili kwa uhakika */
+        .modal.show {
+            display: block !important; /* Hakikisha modal inaonekana inapofunguka */
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #1c2526;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: #1c2526;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .post-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .post-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .post-card img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .post-card h4 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1c2526;
+            margin-top: 10px;
+        }
+
+        .post-card small {
+            color: #636e72;
+            font-size: 14px;
+        }
+
+        .post-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn-delete {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        .btn-delete:hover {
+            background: #cc0000;
+        }
+
+        .btn-edit {
+            background: #00b4d8;
+            color: #fff;
+        }
+
+        .btn-edit:hover {
+            background: #0098b8;
+        }
+
+        .btn-save {
+            background: #00b4d8;
+            color: #fff;
+            margin-top: 15px;
+        }
+
+        .btn-save:hover {
+            background: #0098b8;
+        }
+
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+        }
+
+        .modal-content {
+            background: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-content label {
+            font-weight: 600;
+            margin-top: 10px;
+            display: block;
+            color: #636e72;
+        }
+
+        .modal-content input, .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f9fafb;
+            color: #1c2526;
+        }
+
+        .modal-content textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            color: #636e72;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .post-list {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><i class="fas fa-edit"></i> Hariri Posts</div>
+        <div class="post-list" id="postList"></div>
+    </div>
+
+    <!-- Modal kwa Editing -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModalBtn">×</span>
+            <h3>Hariri Post</h3>
+            <input type="hidden" id="editPostId">
+            <input type="hidden" id="editPostType">
+            <label for="editTitle">Kichwa Kikubwa:</label>
+            <input type="text" id="editTitle" placeholder="Andika kichwa kikubwa...">
+            <label for="editAuthor">Mwandishi:</label>
+            <input type="text" id="editAuthor" placeholder="Jina la mwandishi...">
+            <label for="editSubtitle">Kichwa Kidogo:</label>
+            <input type="text" id="editSubtitle" placeholder="Andika kichwa kidogo...">
+            <label for="editDescription">Maelezo:</label>
+            <textarea id="editDescription" placeholder="Andika maelezo ya post..."></textarea>
+            <button class="btn btn-save" id="saveEditBtn">Hifadhi Mabadiliko</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            databaseURL: "https://simba-77e08-default-rtdb.firebaseio.com/"
+        };
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Function ya Kuonyesha Posts
+        function renderPost(node, key, value) {
+            const postList = document.getElementById('postList');
+            let postCard = document.getElementById(`post-${node}-${key}`);
+
+            if (!postCard) {
+                postCard = document.createElement('div');
+                postCard.id = `post-${node}-${key}`;
+                postCard.className = 'post-card';
+                postList.appendChild(postCard);
+            }
+
+            postCard.innerHTML = `
+                <img src="${value.imageUrl || 'https://via.placeholder.com/150'}" alt="${value.title}">
+                <h4>${value.title}</h4>
+                <small>Tarehe: ${new Date(value.timestamp).toLocaleDateString('sw')}</small>
+                <div class="post-actions">
+                    <button class="btn btn-delete" data-node="${node}" data-key="${key}">Futa</button>
+                    <button class="btn btn-edit" data-node="${node}" data-key="${key}" 
+                        data-title="${value.title || ''}" data-author="${value.author || ''}" 
+                        data-subtitle="${value.subtitle || ''}" data-description="${value.description || ''}">Hariri</button>
+                </div>
+            `;
+
+            // Ongeza event listeners
+            postCard.querySelector('.btn-delete').addEventListener('click', () => deletePost(node, key));
+            postCard.querySelector('.btn-edit').addEventListener('click', () => openEditModal(node, key, value.title || '', value.author || '', value.subtitle || '', value.description || ''));
+        }
+
+        // Function ya Kupakua Posts
+        function loadPosts() {
+            const postNodes = ['habari', 'makala', 'usajili'];
+
+            postNodes.forEach(node => {
+                const postRef = ref(database, `posts/${node}`);
+                onValue(postRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        Object.entries(data).forEach(([key, value]) => {
+                            renderPost(node, key, value);
+                        });
+                    }
+                }, (error) => {
+                    console.error(`Hitilafu ya Kupakia ${node}:`, error);
+                    const postList = document.getElementById('postList');
+                    postList.innerHTML += `<p style="color: red;">Hitilafu ya kupakia ${node}: ${error.message}</p>`;
+                });
+            });
+        }
+
+        // Function ya Kufuta Post
+        function deletePost(node, postId) {
+            if (confirm("Je, unauhakika unataka kufuta post hii?")) {
+                const postRef = ref(database, `posts/${node}/${postId}`);
+                remove(postRef)
+                    .then(() => {
+                        document.getElementById(`post-${node}-${postId}`).remove();
+                        alert("✅ Post imefutwa!");
+                    })
+                    .catch((error) => alert("⚠️ Hitilafu: " + error.message));
+            }
+        }
+
+        // Function ya Kufungua Modal kwa Editing
+        function openEditModal(node, postId, title, author, subtitle, description) {
+            const modal = document.getElementById('editModal');
+            document.getElementById('editPostId').value = postId;
+            document.getElementById('editPostType').value = node;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editAuthor').value = author;
+            document.getElementById('editSubtitle').value = subtitle;
+            document.getElementById('editDescription').value = description;
+            
+            modal.style.display = 'block'; // Fungua modal
+            modal.classList.add('show'); // Ongeza class kwa Bootstrap au visibility
+            console.log("Modal should open with:", { node, postId, title, author, subtitle, description });
+        }
+
+        // Function ya Kufunga Modal
+        function closeModal() {
+            const modal = document.getElementById('editModal');
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        }
+
+        // Function ya Kuhifadhi Mabadiliko
+        function saveEdit() {
+            const postId = document.getElementById('editPostId').value;
+            const postType = document.getElementById('editPostType').value;
+            const title = document.getElementById('editTitle').value.trim();
+            const author = document.getElementById('editAuthor').value.trim();
+            const subtitle = document.getElementById('editSubtitle').value.trim();
+            const description = document.getElementById('editDescription').value.trim();
+
+            if (!title || !description) {
+                alert("⚠️ Tafadhali jaza kichwa na maelezo!");
+                return;
+            }
+
+            const postRef = ref(database, `posts/${postType}/${postId}`);
+            update(postRef, {
+                title: title,
+                author: author,
+                subtitle: subtitle,
+                description: description,
+                timestamp: Date.now()
+            })
+                .then(() => {
+                    alert("✅ Mabadiliko yamehifadhiwa!");
+                    closeModal();
+                })
+                .catch((error) => alert("⚠️ Hitilafu: " + error.message));
+        }
+
+        // Event Listeners kwa Modal
+        document.addEventListener("DOMContentLoaded", () => {
+            loadPosts();
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
