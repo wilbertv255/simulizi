@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments - Simulizi</title>
+    <link rel="icon" href="data:,">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        
+        .plan-card {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .bronze { border-top: 4px solid #cd7f32; }
+        .silver { border-top: 4px solid #c0c0c0; }
+        .gold { border-top: 4px solid #ffd700; }
+        
+        .modal { transition: all 0.3s ease; }
+        
+        .modal-content {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .payment-method-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
+        
+        .btn-primary {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-success {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen">
+        <!-- Header -->
+        <div class="gradient-bg text-white py-6 px-4 shadow-lg">
+            <div class="container mx-auto flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-wallet text-2xl"></i>
+                    <h1 class="text-2xl font-bold">Malipo ya Simulizi</h1>
+                </div>
+                <div class="hidden md:block">
+                    <p class="text-sm opacity-90"><i class="fas fa-user-circle mr-1"></i> ID: <span id="user-id-display"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container mx-auto px-4 py-8">
+            <!-- Progress Steps -->
+            <div class="max-w-3xl mx-auto mb-12">
+                <div class="flex items-center">
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                            <span>1</span>
+                        </div>
+                        <span class="text-sm mt-2 text-indigo-600 font-medium">Chagua Kifurushi</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center">
+                            <span>2</span>
+                        </div>
+                        <span class="text-sm mt-2 text-gray-500">Njia ya Malipo</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center">
+                            <span>3</span>
+                        </div>
+                        <span class="text-sm mt-2 text-gray-500">Thibitisha</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Plans -->
+            <div class="max-w-5xl mx-auto mb-12">
+                <h2 class="text-2xl font-bold text-center mb-2">Chagua Kifurushi Chako</h2>
+                <p class="text-gray-600 text-center mb-8">Pata ufikiaji kamili wa hadithi zote kwa urahisi</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Bronze Plan -->
+                    <div class="plan-card bronze bg-white">
+                        <div class="p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-xl font-bold text-amber-700">Bronze</h3>
+                                    <p class="text-gray-500">Mwezi mmoja</p>
+                                </div>
+                                <span class="text-2xl">🥉</span>
+                            </div>
+                            <div class="my-6">
+                                <p class="text-3xl font-bold">Tsh 4,000</p>
+                                <p class="text-gray-500 text-sm">+ VAT ikiwa inatumika</p>
+                            </div>
+                            <ul class="space-y-2 mb-6">
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Ufikiaji wa hadithi zote</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Hadithi mpya kila siku</span>
+                                </li>
+                                <li class="flex items-center text-gray-400">
+                                    <i class="fas fa-times-circle mr-2"></i>
+                                    <span>Video za ziada</span>
+                                </li>
+                            </ul>
+                            <button data-plan="Bronze" data-amount="4000" data-days="30" class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium">
+                                Chagua Kifurushi
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Silver Plan -->
+                    <div class="plan-card silver bg-white transform scale-105 relative">
+                        <div class="absolute top-0 right-0 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                            Inapendwa
+                        </div>
+                        <div class="p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-600">Silver</h3>
+                                    <p class="text-gray-500">Miezi miwili</p>
+                                </div>
+                                <span class="text-2xl">🥈</span>
+                            </div>
+                            <div class="my-6">
+                                <p class="text-3xl font-bold">Tsh 7,000</p>
+                                <p class="text-gray-500 text-sm">+ VAT ikiwa inatumika</p>
+                                <p class="text-green-600 text-sm font-medium mt-1">Akiba ya 12.5%</p>
+                            </div>
+                            <ul class="space-y-2 mb-6">
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Ufikiaji wa hadithi zote</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Hadithi mpya kila siku</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Video za ziada</span>
+                                </li>
+                            </ul>
+                            <button data-plan="Silver" data-amount="7000" data-days="60" class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium">
+                                Chagua Kifurushi
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Gold Plan -->
+                    <div class="plan-card gold bg-white">
+                        <div class="p-6">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-xl font-bold text-yellow-600">Gold</h3>
+                                    <p class="text-gray-500">Miezi mitatu</p>
+                                </div>
+                                <span class="text-2xl">🥇</span>
+                            </div>
+                            <div class="my-6">
+                                <p class="text-3xl font-bold">Tsh 10,000</p>
+                                <p class="text-gray-500 text-sm">+ VAT ikiwa inatumika</p>
+                                <p class="text-green-600 text-sm font-medium mt-1">Akiba ya 16.7%</p>
+                            </div>
+                            <ul class="space-y-2 mb-6">
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Ufikiaji wa hadithi zote</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Hadithi mpya kila siku</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Video za ziada</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    <span>Ushauri wa moja kwa moja</span>
+                                </li>
+                            </ul>
+                            <button data-plan="Gold" data-amount="10000" data-days="90" class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium">
+                                Chagua Kifurushi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="max-w-2xl mx-auto mb-12">
+                <h2 class="text-2xl font-bold text-center mb-2">Chagua Njia ya Malipo</h2>
+                <p class="text-gray-600 text-center mb-8">Tunakubali mfumo wote wa malipo ya simu</p>
+                
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">Chagua Mfumo wa Malipo</label>
+                        <select id="paymentMethod" class="w-full p-3 border border-gray-300 rounded-lg payment-method-select focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="" selected disabled>Chagua mfumo wa malipo...</option>
+                            <option value="M-Pesa">M-Pesa</option>
+                            <option value="Tigo Pesa">Tigo Pesa</option>
+                            <option value="Airtel Money">Airtel Money</option>
+                            <option value="Halotel">Halotel</option>
+                        </select>
+                    </div>
+                    
+                    <div id="paymentInstructions" class="hidden bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-blue-500"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700" id="instructions-text">
+                                    Chagua kifurushi na mfumo wa malipo kwa kuona maelekezo ya kufanya malipo.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="confirmPaymentBtn" class="w-full btn-success text-white py-3 px-4 rounded-lg font-medium">
+                        Endelea kwa Uthibitisho
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Confirmation Modal -->
+        <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+                <div class="flex justify-between items-center border-b border-gray-200 p-4">
+                    <h2 class="text-xl font-bold text-gray-800">Thibitisha Malipo</h2>
+                    <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="paymentDetails" class="p-6 space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">Maelezo ya Kifurushi</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Kifurushi:</span>
+                                <span id="modalPlan" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Kiasi:</span>
+                                <span id="modalAmount" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Muda:</span>
+                                <span id="modalDuration" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tarehe ya Kumalizika:</span>
+                                <span id="modalEndDate" class="font-medium"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-2">Ingiza Namba ya Simu</h4>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-medium mb-2">Namba ya Simu (07XXXXXXXX au 06XXXXXXXX)</label>
+                            <input id="phoneNumber" type="tel" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Weka namba yako ya simu" pattern="0[6-7][0-9]{8}" maxlength="10">
+                            <p id="phoneError" class="text-red-500 text-sm mt-1 hidden">Tafadhali weka namba sahihi ya simu (07XXXXXXXX au 06XXXXXXXX).</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
+                    <button id="confirmFinalBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        <i class="fas fa-check-circle mr-2"></i>Fanya Malipo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md text-center p-6">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                    <i class="fas fa-check text-green-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mt-3">Malipo Yako Yanashughulikiwa!</h3>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-500" id="success-message">
+                        Ombi lako la malipo limesajiliwa. Utapokea notifikasi kwa SMS pindi malipo yatakapothibitishwa.
+                    </p>
+                </div>
+                <div class="mt-5">
+                    <button id="closeSuccessModalBtn" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        Sawa, Asante
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div id="errorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md text-center p-6">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i class="fas fa-exclamation text-red-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mt-3" id="error-title">Tatizo Limetokea</h3>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-500" id="error-message">
+                        Kuna tatizo katika mchakato wa malipo. Tafadhali jaribu tena baadaye.
+                    </p>
+                </div>
+                <div class="mt-5">
+                    <button id="closeErrorModalBtn" type="button" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        Sawa, Nimeelewa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfYDVYx10P9FUUNTlXw3dfTjPNNlR-Rhc",
+            authDomain: "simulizi23.firebaseapp.com",
+            databaseURL: "https://simulizi23-default-rtdb.firebaseio.com",
+            projectId: "simulizi23",
+            storageBucket: "simulizi23.firebasestorage.app",
+            messagingSenderId: "306995992624",
+            appId: "1:306995992624:web:169d1fa3e2866d771e35f5",
+            measurementId: "G-7RLGM76PSE"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const auth = getAuth(app);
+
+        // Anonymous Authentication
+        signInAnonymously(auth)
+            .then(() => console.log("Signed in anonymously"))
+            .catch(error => console.error("Anonymous auth error:", error.message));
+
+        // Vigezo vya Malipo
+        let selectedPlan = null;
+        let selectedAmount = null;
+        let selectedDays = null;
+        let selectedMethod = null;
+        let userId = null;
+        let isProcessing = false;
+
+        // Pata userId kutoka URL
+        const urlParams = new URLSearchParams(window.location.search);
+        userId = urlParams.get('userId');
+        document.getElementById('user-id-display').textContent = userId || 'Unknown';
+
+        // Modal elements
+        const paymentModal = document.getElementById("paymentModal");
+        const successModal = document.getElementById("successModal");
+        const errorModal = document.getElementById("errorModal");
+        const closeModalBtn = document.getElementById("closeModalBtn");
+        const closeSuccessModalBtn = document.getElementById("closeSuccessModalBtn");
+        const closeErrorModalBtn = document.getElementById("closeErrorModalBtn");
+        const confirmFinalBtn = document.getElementById("confirmFinalBtn");
+
+        // Chagua Vifurushi
+        document.querySelectorAll('[data-plan]').forEach(button => {
+            button.addEventListener('click', () => {
+                selectedPlan = button.dataset.plan;
+                selectedAmount = button.dataset.amount;
+                selectedDays = parseInt(button.dataset.days);
+                
+                // Update active step UI
+                document.querySelectorAll('.flex-col.items-center').forEach((step, index) => {
+                    if (index === 0) {
+                        step.querySelector('div').classList.remove('bg-gray-200', 'text-gray-600');
+                        step.querySelector('div').classList.add('bg-indigo-600', 'text-white');
+                        step.querySelector('span').classList.add('text-indigo-600');
+                        step.querySelector('span').classList.remove('text-gray-500');
+                    }
+                });
+                
+                // Show payment method section
+                document.getElementById('paymentInstructions').classList.remove('hidden');
+                document.getElementById('instructions-text').textContent = `Umechagua kifurushi cha ${selectedPlan} kwa Tsh ${selectedAmount}. Chagua mfumo wa malipo kuendelea.`;
+            });
+        });
+
+        // Chagua Njia ya Malipo
+        document.getElementById('paymentMethod').addEventListener('change', (e) => {
+            selectedMethod = e.target.value;
+            
+            if (selectedPlan && selectedMethod) {
+                // Update active step UI
+                document.querySelectorAll('.flex-col.items-center').forEach((step, index) => {
+                    if (index === 1) {
+                        step.querySelector('div').classList.remove('bg-gray-200', 'text-gray-600');
+                        step.querySelector('div').classList.add('bg-indigo-600', 'text-white');
+                        step.querySelector('span').classList.add('text-indigo-600');
+                        step.querySelector('span').classList.remove('text-gray-500');
+                    }
+                });
+                
+                document.getElementById('instructions-text').textContent = `Umechagua ${selectedMethod} kama njia ya malipo. Bonyeza "Endelea kwa Uthibitisho" kuendelea.`;
+            }
+        });
+
+        // Thibitisha Malipo
+        document.getElementById('confirmPaymentBtn').addEventListener('click', async () => {
+            if (!selectedPlan) {
+                showError("Tafadhali chagua kifurushi cha malipo!");
+                return;
+            }
+            
+            if (!selectedMethod || selectedMethod === "") {
+                showError("Tafadhali chagua njia ya malipo!");
+                return;
+            }
+
+            if (!auth.currentUser) {
+                showError("Haujaingia! Tafadhali jaribu tena.");
+                return;
+            }
+
+            try {
+                // Pata taarifa za mtumiaji
+                const userRef = ref(database, `users/${userId}`);
+                const userSnapshot = await get(userRef);
+
+                if (!userSnapshot.exists()) {
+                    showError("Mtumiaji huyo hajapatikana!");
+                    return;
+                }
+
+                const user = userSnapshot.val();
+                const userName = user.name || 'Unknown';
+                const userEmail = user.email || `${userId}@example.com`;
+                const endDate = new Date();
+                endDate.setDate(endDate.getDate() + selectedDays);
+
+                // Onyesha modal ya kuthibitisha malipo
+                document.getElementById('modalPlan').textContent = selectedPlan;
+                document.getElementById('modalAmount').textContent = `Tsh ${selectedAmount}`;
+                document.getElementById('modalDuration').textContent = `${selectedDays} siku`;
+                document.getElementById('modalEndDate').textContent = endDate.toLocaleDateString('sw-TZ');
+                document.getElementById('phoneNumber').value = '';
+                document.getElementById('phoneError').classList.add('hidden');
+                
+                paymentModal.classList.remove('hidden');
+                
+                // Update active step UI
+                document.querySelectorAll('.flex-col.items-center').forEach((step, index) => {
+                    if (index === 2) {
+                        step.querySelector('div').classList.remove('bg-gray-200', 'text-gray-600');
+                        step.querySelector('div').classList.add('bg-indigo-600', 'text-white');
+                        step.querySelector('span').classList.add('text-indigo-600');
+                        step.querySelector('span').classList.remove('text-gray-500');
+                    }
+                });
+
+                // Thibitisha namba ya simu na tuma ombi
+                confirmFinalBtn.onclick = async () => {
+                    if (isProcessing) return;
+                    isProcessing = true;
+                    confirmFinalBtn.disabled = true;
+
+                    const phoneNumber = document.getElementById('phoneNumber').value;
+                    const phonePattern = /^0[6-7][0-9]{8}$/;
+
+                    if (!phonePattern.test(phoneNumber)) {
+                        document.getElementById('phoneError').classList.remove('hidden');
+                        isProcessing = false;
+                        confirmFinalBtn.disabled = false;
+                        return;
+                    }
+
+                    try {
+                        console.log('=== Initiating Payment Request ===');
+                        console.log('Request Data:', {
+                            userId,
+                            plan: selectedPlan,
+                            amount: selectedAmount,
+                            method: selectedMethod,
+                            phoneNumber,
+                            userEmail,
+                            userName
+                        });
+
+                        // Unda order ID
+                        const orderId = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        console.log('Generated Order ID:', orderId);
+
+                        // Hifadhi rekodi kwenye Firebase
+                        console.log('Saving Payment Record to Firebase');
+                        const paymentsRef = ref(database, 'payments');
+                        const newPaymentRef = push(paymentsRef);
+                        await set(newPaymentRef, {
+                            userId,
+                            plan: selectedPlan,
+                            amount: selectedAmount,
+                            method: selectedMethod,
+                            phoneNumber,
+                            orderId,
+                            timestamp: new Date().toISOString(),
+                            status: 'pending'
+                        });
+
+                        // Tuma ombi kwa Vercel Function (proxy)
+                        const functionUrl = '/api/zenopay-proxy';
+                        console.log('Sending Request to:', functionUrl);
+
+                        const response = await fetch(functionUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                order_id: orderId,
+                                buyer_email: userEmail,
+                                buyer_name: userName,
+                                buyer_phone: phoneNumber,
+                                amount: parseInt(selectedAmount),
+                                webhook_url: 'https://simulizi.vercel.app/api/webhook'
+                            })
+                        });
+
+                        console.log('Proxy Response Status:', response.status);
+                        console.log('Proxy Response Headers:', JSON.stringify([...response.headers]));
+
+                        if (response.status === 404) {
+                            console.error('Function Not Found:', functionUrl);
+                            throw new Error('Payment function not found on server. Please contact support.');
+                        }
+
+                        let result;
+                        try {
+                            result = await response.json();
+                            console.log('Proxy Response Body:', result);
+                        } catch (error) {
+                            console.error('JSON Parse Error:', error.message);
+                            const responseText = await response.text();
+                            console.log('Response Text:', responseText);
+                            throw new Error(`Invalid response from proxy: ${responseText.substring(0, 100)}...`);
+                        }
+
+                        if (!response.ok || result.status !== 'success') {
+                            console.error('Proxy Error:', result.message || `HTTP Status: ${response.status}`);
+                            throw new Error(result.message || 'Failed to initiate payment');
+                        }
+
+                        paymentModal.classList.add('hidden');
+                        showSuccess(`Ombi lako la malipo (Order ID: ${orderId}) limesajiliwa. Utapokea notifikasi kwa SMS.`);
+                    } catch (error) {
+                        console.error('Payment Request Error:', error.message);
+                        showError(`Tatizo limetokea wakati wa kusajili malipo: ${error.message}`);
+                    } finally {
+                        isProcessing = false;
+                        confirmFinalBtn.disabled = false;
+                    }
+                };
+
+            } catch (error) {
+                console.error('Error:', error.message);
+                showError('Tatizo la kiufundi limetokea! Jaribu tena.');
+            }
+        });
+
+        // Close modals
+        closeModalBtn.addEventListener('click', () => {
+            paymentModal.classList.add('hidden');
+        });
+        
+        closeSuccessModalBtn.addEventListener('click', () => {
+            successModal.classList.add('hidden');
+            window.location.href = `home.html?userId=${userId}`;
+        });
+        
+        closeErrorModalBtn.addEventListener('click', () => {
+            errorModal.classList.add('hidden');
+        });
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === paymentModal) {
+                paymentModal.classList.add('hidden');
+            }
+            if (event.target === successModal) {
+                successModal.classList.add('hidden');
+                window.location.href = `home.html?userId=${userId}`;
+            }
+            if (event.target === errorModal) {
+                errorModal.classList.add('hidden');
+            }
+        });
+
+        // Show success modal
+        function showSuccess(message) {
+            document.getElementById('success-message').textContent = message;
+            successModal.classList.remove('hidden');
+        }
+
+        // Show error modal
+        function showError(message, title = "Tatizo Limetokea") {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-title').textContent = title;
+            errorModal.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
